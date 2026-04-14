@@ -78,7 +78,7 @@
 </head>
 <body class="text-zinc-100 antialiased min-h-screen flex justify-center selection:bg-violet-500/30">
 
-    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-white text-zinc-950 px-6 py-3 rounded-full font-bold shadow-2xl opacity-0 transition-all duration-300 z-[3000] flex items-center gap-2 pointer-events-none transform -translate-y-4">
+    <div id="toast" class="fixed top-6 left-1/2 -translate-x-1/2 bg-white text-zinc-950 px-6 py-3 rounded-full font-bold shadow-2xl opacity-0 transition-all duration-300 z-[4000] flex items-center gap-2 pointer-events-none transform -translate-y-4">
         <span id="toastIcon">✅</span> <span id="toastMessage">Success</span>
     </div>
 
@@ -110,7 +110,6 @@
             <h2 class="text-lg font-bold text-zinc-400 mt-10 mb-2 flex items-center gap-2">
                 📅 Upcoming Missions
             </h2>
-            <!-- Scrollable Upcoming container -->
             <div id="dashboard-tasks-upcoming" class="space-y-4 pb-10"></div>
         </div>
 
@@ -213,17 +212,12 @@
                 </button>
             </div>
 
-            <!-- Pipeline Section -->
             <div id="history-pipeline-section" class="archive-section block">
                 <div id="history-pipeline-container" class="space-y-2 pb-10"></div>
             </div>
-
-            <!-- Converted Section -->
             <div id="history-converted-section" class="archive-section hidden">
                 <div id="history-converted-container" class="space-y-2 pb-10"></div>
             </div>
-
-            <!-- Dropped Section -->
             <div id="history-dropped-section" class="archive-section hidden">
                 <div id="history-dropped-container" class="space-y-2 pb-10"></div>
             </div>
@@ -236,7 +230,7 @@
         <i class="fa-solid fa-rotate-right"></i>
     </button>
 
-    <!-- BOTTOM NAV (Cleaned up - 4 items) -->
+    <!-- BOTTOM NAV -->
     <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-zinc-950/85 backdrop-blur-xl border-t border-white/10 pb-safe pt-3 px-6 z-50 rounded-t-3xl sm:rounded-none sm:border-x">
         <div class="flex justify-between items-center pb-2">
             <button class="nav-btn flex-1 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors" onclick="router('dashboard', this)">
@@ -309,6 +303,26 @@
             
             <form id="logForm" class="space-y-4">
                 <input type="hidden" id="logLeadId">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Update Date</label>
+                        <input type="date" id="logInteractionDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Follow-up</label>
+                        <input type="date" id="logDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                    </div>
+                </div>
+                
+                <!-- Quick Dates -->
+                <div class="flex gap-2 mt-1 overflow-x-auto no-scrollbar pb-2">
+                    <button type="button" onclick="setQuickDate('logDate', 1)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Day</button>
+                    <button type="button" onclick="setQuickDate('logDate', 7)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Wk</button>
+                    <button type="button" onclick="setQuickDate('logDate', 14)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+2 Wks</button>
+                    <button type="button" onclick="setQuickDate('logDate', 30)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Mo</button>
+                </div>
+
                 <div>
                     <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">What happened?</label>
                     <textarea id="logNote" rows="2" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="e.g. Call connected, discussed pricing."></textarea>
@@ -318,19 +332,6 @@
                     <input type="text" id="logNextStep" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="e.g. Send final quotation PDF">
                 </div>
                 
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Next Follow-up Date</label>
-                    <input type="date" id="logDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
-                    
-                    <!-- Strategy / Quick Dates -->
-                    <div class="flex gap-2 mt-2 overflow-x-auto no-scrollbar">
-                        <button type="button" onclick="setQuickDate(1)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Day</button>
-                        <button type="button" onclick="setQuickDate(7)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Wk</button>
-                        <button type="button" onclick="setQuickDate(14)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+2 Wks</button>
-                        <button type="button" onclick="setQuickDate(30)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Mo</button>
-                    </div>
-                </div>
-
                 <div class="grid grid-cols-2 gap-4 pt-2">
                     <div>
                         <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Pipeline Mood</label>
@@ -354,6 +355,60 @@
                 
                 <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl mt-6 hover:shadow-[0_0_15px_rgba(139,92,246,0.4)] active:scale-[0.98] transition-all">
                     Save Memory
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit History / Log Modal -->
+    <div id="editLogModal" class="modal-backdrop fixed inset-0 z-[3000] flex items-end sm:items-center sm:justify-center">
+        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] overflow-y-auto no-scrollbar">
+            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('editLogModal')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-white mb-6">Edit Memory ✏️</h2>
+            
+            <form id="editLogForm" class="space-y-4">
+                <input type="hidden" id="editLogId">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Update Date</label>
+                        <input type="date" id="editLogInteractionDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Follow-up</label>
+                        <input type="date" id="editLogDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 mt-1 overflow-x-auto no-scrollbar pb-2">
+                    <button type="button" onclick="setQuickDate('editLogDate', 1)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Day</button>
+                    <button type="button" onclick="setQuickDate('editLogDate', 7)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Wk</button>
+                    <button type="button" onclick="setQuickDate('editLogDate', 14)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+2 Wks</button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">What happened?</label>
+                    <textarea id="editLogNote" rows="2" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Next Action Step</label>
+                    <input type="text" id="editLogNextStep" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Pipeline Mood</label>
+                    <select id="editLogPriority" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all appearance-none">
+                        <option value="Hot">🔴 Hot</option>
+                        <option value="Warm">🟡 Warm</option>
+                        <option value="Approval">⏳ Approval</option>
+                        <option value="Cold">🔵 Cold</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="w-full bg-zinc-100 text-zinc-900 font-bold py-3.5 rounded-xl mt-6 hover:bg-white active:scale-[0.98] transition-all">
+                    Save Changes
                 </button>
             </form>
         </div>
@@ -479,7 +534,7 @@
 
         document.getElementById('todayDateStr').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-        // Empty Data Arrays (Will be filled from DB)
+        // Empty Data Arrays
         let leads = [];
         let interactions = [];
 
@@ -531,7 +586,6 @@
             refreshAllViews();
         }
 
-        // Stats Logic
         function renderStats() {
             let total = leads.length;
             let converted = leads.filter(l => l.status === 'Converted').length;
@@ -544,42 +598,41 @@
             document.getElementById('stat-active').innerText = active;
         }
 
-        // Quick Follow-up Dates
-        function setQuickDate(daysToAdd) {
+        function setQuickDate(inputId, daysToAdd) {
             const date = new Date();
             date.setDate(date.getDate() + daysToAdd);
-            document.getElementById('logDate').value = date.toISOString().split('T')[0];
+            document.getElementById(inputId).value = date.toISOString().split('T')[0];
         }
 
-        // Render Dashboard
         function renderDashboard() {
             const todayContainer = document.getElementById('dashboard-tasks-today');
             const upcomingContainer = document.getElementById('dashboard-tasks-upcoming');
 
-            const pending = interactions.filter(i => i.status === 'pending');
-            const activeTasks = pending.filter(i => {
+            const activeTasks = interactions.filter(i => {
                 const lead = leads.find(l => l.id === i.lead_id);
-                return lead && (lead.status === 'Active' || lead.status === 'Postponed');
+                if (!lead || (lead.status !== 'Active' && lead.status !== 'Postponed')) return false;
+                
+                if (i.status === 'pending') return true;
+                if (i.status === 'done' && i.next_followup_date >= todayStr) return true;
+                
+                return false;
             });
             
             const todayTasks = activeTasks.filter(i => i.next_followup_date <= todayStr);
             const upcomingTasks = activeTasks.filter(i => i.next_followup_date > todayStr).sort((a,b) => new Date(a.next_followup_date) - new Date(b.next_followup_date));
 
-            // Today Empty State
             todayContainer.innerHTML = todayTasks.length ? '' : `
                 <div class="border border-white/5 bg-white/5 rounded-2xl p-6 text-center">
                     <div class="text-3xl mb-2">☕</div>
                     <p class="text-sm text-zinc-400 font-medium">All caught up for today!</p>
                 </div>`;
             
-            // Render Today
             todayTasks.forEach(task => {
                 const lead = leads.find(l => l.id === task.lead_id);
                 if(!lead) return;
                 todayContainer.innerHTML += generateTaskHTML(task, lead, true);
             });
 
-            // Render Upcoming (Infinite scroll style, grouped by date)
             upcomingContainer.innerHTML = '';
             if(upcomingTasks.length === 0) {
                 upcomingContainer.innerHTML = `
@@ -607,16 +660,21 @@
         }
 
         function generateTaskHTML(task, lead, isToday) {
+            const isDone = task.status === 'done';
+            const cardBg = isDone ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-zinc-900/50 border-white/10 hover:bg-zinc-900';
+            const titleColor = isDone ? 'text-emerald-400 line-through opacity-70' : 'text-white';
+            const badgeBg = isToday ? (isDone ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-violet-500/20 text-violet-400 border-violet-500/30') : (isDone ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-zinc-400 border-white/10');
+
             return `
-                <div class="bg-zinc-900/50 border border-white/10 rounded-2xl p-4 transition-all hover:bg-zinc-900 mb-3 last:mb-0">
+                <div class="${cardBg} border rounded-2xl p-4 transition-all mb-3 last:mb-0">
                     <div class="flex justify-between items-start mb-2">
-                        <div class="text-xs font-extrabold ${isToday ? 'bg-violet-500/20 text-violet-400 border-violet-500/30' : 'bg-white/5 text-zinc-400 border-white/10'} border px-2 py-1 rounded-md inline-block">
+                        <div class="text-xs font-extrabold ${badgeBg} border px-2 py-1 rounded-md inline-block">
                             ${isToday ? 'TODAY' : new Date(task.next_followup_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </div>
-                        <span class="text-[0.65rem] font-bold text-zinc-500 flex items-center gap-1"><i class="fa-solid fa-user"></i> ${lead.name}</span>
+                        <span class="text-[0.65rem] font-bold ${isDone ? 'text-emerald-600' : 'text-zinc-500'} flex items-center gap-1"><i class="fa-solid fa-user"></i> ${lead.name}</span>
                     </div>
-                    <div class="font-bold text-[15px] text-white leading-snug mb-4">${task.next_action}</div>
-                    <div class="flex gap-2">
+                    <div class="font-bold text-[15px] ${titleColor} leading-snug mb-4">${task.next_action}</div>
+                    <div class="flex gap-2 ${isDone ? 'hidden' : ''}">
                         <button onclick="openLogModal(${lead.id})" class="flex-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 py-2 rounded-xl font-bold text-sm transition-colors active:scale-[0.98]">
                             <i class="fa-solid fa-pen mr-1"></i> Log Update
                         </button>
@@ -630,11 +688,17 @@
                             ❌
                         </button>
                     </div>
+                    ${isDone ? `
+                    <div class="flex justify-between items-center mt-2">
+                        <div class="text-xs font-bold text-emerald-500/70 flex items-center gap-1.5"><i class="fa-solid fa-check-circle"></i> Task Completed</div>
+                        <button onclick="undoTask(${task.id})" class="text-xs font-bold text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95">
+                            <i class="fa-solid fa-rotate-left"></i> Undo
+                        </button>
+                    </div>` : ''}
                 </div>
             `;
         }
 
-        // Render Pipeline
         function renderPipeline() {
             const container = document.getElementById('leads-container');
             container.innerHTML = '';
@@ -718,7 +782,6 @@
             }
         }
 
-        // Render Calendar
         function changeMonth(dir) {
             currentMonth += dir;
             if(currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -740,14 +803,12 @@
             for(let d=1; d<=daysInMonth; d++) {
                 const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 
-                // Tasks dot
                 const hasTask = interactions.some(i => {
                     if (i.next_followup_date !== dateStr || i.status !== 'pending') return false;
                     const lead = leads.find(l => l.id === i.lead_id);
                     return lead && (lead.status === 'Active' || lead.status === 'Postponed');
                 });
 
-                // New lead dot
                 const hasNewLead = leads.some(l => l.created_at === dateStr);
                 
                 const isToday = dateStr === todayStr;
@@ -769,18 +830,15 @@
         }
 
         function showDayTasks(dateStr) {
-            // Setup Add Button for specific date
             const addBtn = document.getElementById('addClientForDayBtn');
             addBtn.onclick = () => { closeModal('dayTasksModal'); openAddModal(dateStr); };
 
-            // Find Tasks
             const dayTasks = interactions.filter(i => {
-                if (i.next_followup_date !== dateStr || i.status !== 'pending') return false;
+                if (i.next_followup_date !== dateStr) return false;
                 const lead = leads.find(l => l.id === i.lead_id);
                 return lead && (lead.status === 'Active' || lead.status === 'Postponed');
             });
             
-            // Find Created Clients
             const enteredClients = leads.filter(l => l.created_at === dateStr);
 
             const container = document.getElementById('dayTasksContainer');
@@ -790,7 +848,6 @@
             const displayDate = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
             document.getElementById('dayTasksTitle').innerText = displayDate;
             
-            // Render Tasks
             if(dayTasks.length === 0) {
                 container.innerHTML = `
                     <div class="text-center py-4 border border-white/5 border-dashed rounded-xl">
@@ -801,11 +858,16 @@
                 dayTasks.forEach(task => {
                     const lead = leads.find(l => l.id === task.lead_id);
                     if(!lead) return;
+                    
+                    const isDone = task.status === 'done';
+                    const cardClass = isDone ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-black/30 border-white/10';
+                    const textClass = isDone ? 'text-emerald-400 line-through opacity-70' : 'text-white';
+                    
                     container.innerHTML += `
-                        <div class="bg-black/30 border border-white/10 rounded-xl p-4">
+                        <div class="${cardClass} border rounded-xl p-4">
                             <div class="text-[0.7rem] font-bold text-zinc-500 mb-1 flex items-center gap-1"><i class="fa-solid fa-user"></i> ${lead.name}</div>
-                            <div class="font-bold text-white mb-4 leading-snug">${task.next_action}</div>
-                            <div class="flex gap-2">
+                            <div class="font-bold ${textClass} mb-4 leading-snug">${task.next_action}</div>
+                            <div class="flex gap-2 ${isDone ? 'hidden' : ''}">
                                 <button onclick="openLogModal(${lead.id}); closeModal('dayTasksModal');" class="flex-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 py-2 rounded-lg font-bold text-xs transition-colors">
                                     <i class="fa-solid fa-pen mr-1"></i> Log Update
                                 </button>
@@ -813,11 +875,17 @@
                                     <i class="fa-solid fa-check"></i>
                                 </button>
                             </div>
+                            ${isDone ? `
+                            <div class="flex justify-between items-center mt-2">
+                                <div class="text-[0.65rem] font-bold text-emerald-500/70"><i class="fa-solid fa-check-circle"></i> Completed</div>
+                                <button onclick="undoTask(${task.id}); closeModal('dayTasksModal');" class="text-[0.65rem] font-bold text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-colors flex items-center gap-1 active:scale-95">
+                                    <i class="fa-solid fa-rotate-left"></i> Undo
+                                </button>
+                            </div>` : ''}
                         </div>`;
                 });
             }
 
-            // Render Entered Clients
             if(enteredClients.length === 0) {
                 enteredHeader.style.display = 'none';
                 enteredContainer.innerHTML = '';
@@ -842,7 +910,6 @@
             openModal('dayTasksModal');
         }
 
-        // Render History / Archive View
         function renderHistoryView() {
             const pipelineContainer = document.getElementById('history-pipeline-container');
             const convertedContainer = document.getElementById('history-converted-container');
@@ -856,11 +923,9 @@
             let convertedCount = 0;
             let droppedCount = 0;
 
-            // Sort leads newest first based on creation date
             const sortedLeads = [...leads].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
             sortedLeads.forEach(lead => {
-                // Find latest interaction to show last updated date
                 const latest = interactions.filter(i => i.lead_id === lead.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
                 const lastUpdatedStr = latest ? new Date(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No updates';
 
@@ -900,7 +965,6 @@
         }
 
         function switchArchiveTab(tabId, el) {
-            // Update Tab UI
             document.querySelectorAll('.archive-tab-btn').forEach(btn => {
                 btn.classList.remove('active', 'border-white/10', 'bg-white/5', 'text-violet-400', 'text-emerald-400', 'text-red-400');
                 btn.classList.add('border-white/5', 'bg-transparent', 'text-zinc-500');
@@ -913,7 +977,6 @@
             if(tabId === 'converted') el.classList.add('text-emerald-400');
             if(tabId === 'dropped') el.classList.add('text-red-400');
 
-            // Switch Sections
             document.querySelectorAll('.archive-section').forEach(sec => {
                 sec.classList.remove('block');
                 sec.classList.add('hidden');
@@ -936,7 +999,8 @@
         function openLogModal(id) {
             const lead = leads.find(l => l.id === id);
             document.getElementById('logLeadId').value = id;
-            document.getElementById('logDate').value = todayStr; // Default to today
+            document.getElementById('logInteractionDate').value = todayStr; // Editable default to today
+            document.getElementById('logDate').value = todayStr; // Follow-up default
             if (lead) document.getElementById('logLeadStatus').value = lead.status;
             openModal('logModal');
         }
@@ -950,7 +1014,6 @@
 
             document.getElementById('historyClientName').innerText = lead.name;
             
-            // Generate Badges
             let statusClass = "bg-zinc-500/20 text-zinc-400";
             if(lead.status === 'Converted') statusClass = "bg-emerald-500/20 text-emerald-400";
             if(lead.status === 'Dropped') statusClass = "bg-red-500/20 text-red-400";
@@ -974,7 +1037,6 @@
             const timeline = document.getElementById('historyTimeline');
             timeline.innerHTML = '';
 
-            // Get all interactions for this lead, sorted newest first
             const leadInteractions = interactions.filter(i => i.lead_id === id).sort((a,b) => new Date(b.date) - new Date(a.date));
 
             if(leadInteractions.length === 0) {
@@ -989,8 +1051,13 @@
                             
                             <div class="bg-black/20 border border-white/5 rounded-xl p-4 transition-colors hover:bg-black/40">
                                 <div class="flex justify-between items-start mb-2">
-                                    <span class="text-xs font-bold text-violet-400">${dateFormatted}</span>
-                                    ${i.status === 'done' ? '<span class="text-[0.6rem] text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i></span>' : '<span class="text-[0.6rem] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">PENDING</span>'}
+                                    <div>
+                                        <span class="text-xs font-bold text-violet-400 mr-2">${dateFormatted}</span>
+                                        ${i.status === 'done' ? '<span class="text-[0.6rem] text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i></span>' : '<span class="text-[0.6rem] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">PENDING</span>'}
+                                    </div>
+                                    <button onclick="openEditLogModal(${i.id})" class="text-zinc-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 w-7 h-7 rounded-lg flex justify-center items-center">
+                                        <i class="fa-solid fa-pen text-[0.65rem]"></i>
+                                    </button>
                                 </div>
                                 <div class="text-sm text-white font-medium mb-3 leading-relaxed">"${i.note}"</div>
                                 
@@ -1008,10 +1075,24 @@
             openModal('clientHistoryModal');
         }
 
+        // New function to open edit modal for a specific history log item
+        function openEditLogModal(intId) {
+            const intData = interactions.find(x => x.id === intId);
+            if (!intData) return;
+            
+            document.getElementById('editLogId').value = intData.id;
+            document.getElementById('editLogInteractionDate').value = intData.date;
+            document.getElementById('editLogNote').value = intData.note;
+            document.getElementById('editLogNextStep').value = intData.next_action;
+            document.getElementById('editLogDate').value = intData.next_followup_date;
+            document.getElementById('editLogPriority').value = intData.priority || 'Warm';
+            
+            openModal('editLogModal');
+        }
+
         function logFromHistory() {
             if(currentHistoryLeadId) {
                 closeModal('clientHistoryModal');
-                // slight delay allows the first modal to close smoothly before opening the next
                 setTimeout(() => { openLogModal(currentHistoryLeadId); }, 300); 
             }
         }
@@ -1072,7 +1153,6 @@
                 const icon = btn.querySelector('i');
                 icon.classList.add('animate-spin');
                 
-                // Supabase delete (on delete cascade handles interactions)
                 await supabaseClient.from('leads').delete().eq('id', leadId);
                 
                 showToast('Client deleted', '🗑️');
@@ -1082,22 +1162,28 @@
         }
 
         async function markDone(taskId) {
-            // Optimistic update
             const task = interactions.find(i => i.id === taskId);
             if (task) task.status = 'done';
             refreshAllViews();
             showToast('Task Cleared!', '✅');
 
-            // DB Update
             await supabaseClient.from('interactions').update({ status: 'done' }).eq('id', taskId);
-            await loadData(); // Resync
+            await loadData(); 
+        }
+
+        async function undoTask(taskId) {
+            const task = interactions.find(i => i.id === taskId);
+            if (task) task.status = 'pending';
+            refreshAllViews();
+            showToast('Task Restored!', '⏪');
+
+            await supabaseClient.from('interactions').update({ status: 'pending' }).eq('id', taskId);
+            await loadData(); 
         }
 
         async function markStatus(leadId, newStatus, taskId) {
-            // DB Update Lead
             await supabaseClient.from('leads').update({ status: newStatus }).eq('id', leadId);
 
-            // DB Update Interactions
             if (taskId) {
                 await supabaseClient.from('interactions').update({ status: 'done' }).eq('id', taskId);
             } else {
@@ -1114,10 +1200,10 @@
             else if(newStatus === 'Postponed') { msg = 'Lead Postponed'; icon = '⏸️'; }
 
             showToast(msg, icon);
-            await loadData(); // Reloads entirely from DB & Re-renders
+            await loadData(); 
         }
 
-        // Form Submissions mapped to Supabase
+        // Form Submissions
         document.getElementById('addLeadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const creationDate = document.getElementById('addLeadDate').value || todayStr;
@@ -1173,7 +1259,6 @@
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
 
-            // 1. Update Lead Status
             const { error: leadErr } = await supabaseClient.from('leads').update({ status: newStatus }).eq('id', leadId);
             if (leadErr) {
                 showToast("Error updating status: " + leadErr.message, "❌");
@@ -1181,13 +1266,11 @@
                 return;
             }
 
-            // 2. Resolve pending interactions
             await supabaseClient.from('interactions').update({ status: 'done' }).eq('lead_id', leadId).eq('status', 'pending');
 
-            // 3. Insert new interaction
             const { error: intErr } = await supabaseClient.from('interactions').insert([{
                 lead_id: leadId,
-                date: todayStr, 
+                date: document.getElementById('logInteractionDate').value, 
                 note: document.getElementById('logNote').value,
                 next_action: document.getElementById('logNextStep').value,
                 priority: document.getElementById('logPriority').value,
@@ -1232,6 +1315,37 @@
             closeModal('editLeadModal');
             showToast('Client updated!', '✏️');
             await loadData();
+        });
+
+        // Edit interaction history form
+        document.getElementById('editLogForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const intId = parseInt(document.getElementById('editLogId').value);
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
+
+            const { error: intEditErr } = await supabaseClient.from('interactions').update({
+                date: document.getElementById('editLogInteractionDate').value,
+                note: document.getElementById('editLogNote').value,
+                next_action: document.getElementById('editLogNextStep').value,
+                priority: document.getElementById('editLogPriority').value,
+                next_followup_date: document.getElementById('editLogDate').value
+            }).eq('id', intId);
+
+            if (intEditErr) {
+                showToast("Error updating history: " + intEditErr.message, "❌");
+            } else {
+                showToast("Memory updated!", "✏️");
+                closeModal('editLogModal');
+                await loadData();
+                
+                // Keep the history view open and fresh
+                if (currentHistoryLeadId) {
+                    openHistoryModal(currentHistoryLeadId);
+                }
+            }
+            
+            submitBtn.innerText = "Save Changes"; submitBtn.disabled = false;
         });
 
         // Init App: Wait for data to load from Supabase
