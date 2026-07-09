@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Client Memory OS | AIGFOX</title>
+    <title>Client Follow-up Portal | AIGFOX</title>
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Supabase SDK -->
+    <!-- Supabase SDK & Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -22,15 +23,11 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Inter"', 'sans-serif'],
                     },
                     colors: {
                         app: '#09090b',
-                        glass: 'rgba(24, 24, 27, 0.65)',
-                        hot: '#ef4444',
-                        warm: '#f59e0b',
-                        approval: '#8b5cf6',
-                        cold: '#3b82f6',
+                        glass: 'rgba(24, 24, 27, 0.65)'
                     }
                 }
             }
@@ -40,8 +37,9 @@
     <style>
         body {
             background-color: #09090b;
+            /* Restored the beautiful colorful gradients */
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.12) 0%, transparent 50%),
                 radial-gradient(circle at 10% 100%, rgba(236, 72, 153, 0.05), transparent 50%);
             background-attachment: fixed;
             -webkit-tap-highlight-color: transparent;
@@ -60,7 +58,7 @@
 
         .modal-backdrop {
             opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
-            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
         }
         .modal-backdrop.open { opacity: 1; pointer-events: auto; }
         
@@ -85,72 +83,79 @@
     <div id="app" class="w-full max-w-md relative pb-28 pt-6 px-5 sm:border-x sm:border-white/5 sm:bg-zinc-950/50 sm:shadow-2xl sm:min-h-screen">
         
         <header class="flex justify-between items-center mb-8">
-            <h1 class="flex items-center gap-3 text-2xl font-bold tracking-tight">
-                <div class="bg-violet-500/20 p-2 rounded-xl border border-violet-500/30 text-violet-400">
-                    <i class="fa-solid fa-brain"></i>
+            <h1 class="flex items-center gap-3 text-xl font-bold tracking-tight">
+                <div class="bg-violet-500/20 w-10 h-10 flex items-center justify-center rounded-xl border border-violet-500/30 text-violet-400 shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+                    <i class="fa-solid fa-address-book"></i>
                 </div>
-                <span>Client <span class="font-normal text-zinc-400">OS</span></span>
+                <span>Follow-up <span class="font-normal text-zinc-400">Portal</span></span>
             </h1>
-            <div class="text-xs font-extrabold bg-amber-500/10 px-3 py-1.5 rounded-full text-amber-500 border border-amber-500/20 flex items-center gap-2 tracking-wide uppercase">
-                <div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div>
-                Live
-            </div>
+            <button onclick="forceRefresh()" id="topRefreshBtn" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors active:scale-95">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
         </header>
 
         <!-- VIEWS -->
+        
         <!-- 1. Dashboard View -->
-        <div id="view-dashboard" class="view">
+        <div id="view-dashboard" class="view active">
             
-            <div class="flex items-center gap-2 mb-4">
-                <h2 class="text-lg font-bold text-white">🔥 Today's Focus</h2>
-                <span class="text-xs text-zinc-500 font-medium ml-auto" id="todayDateStr"></span>
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 gap-3 mb-8">
+                <!-- Reverted back to Violet Button -->
+                <button onclick="openAddModal()" class="bg-gradient-to-br from-violet-500 to-indigo-600 hover:opacity-90 text-white p-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-violet-500/20 border border-violet-400/20">
+                    <i class="fa-solid fa-user-plus text-xl mb-1"></i>
+                    <span>Add Client</span>
+                </button>
+                <button onclick="router('clients', null)" class="bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-200 p-4 rounded-2xl font-bold flex flex-col items-center justify-center gap-2 transition-all active:scale-[0.98]">
+                    <i class="fa-solid fa-users text-xl mb-1 text-zinc-400"></i>
+                    <span>All Clients</span>
+                </button>
             </div>
-            <div id="dashboard-tasks-today" class="space-y-3"></div>
-            
-            <h2 class="text-lg font-bold text-zinc-400 mt-10 mb-2 flex items-center gap-2">
-                📅 Upcoming Missions
-            </h2>
-            <div id="dashboard-tasks-upcoming" class="space-y-4 pb-10"></div>
+
+            <!-- Overdue Section -->
+            <div id="dashboard-overdue-wrapper" class="hidden mb-6">
+                <h2 class="text-lg font-bold text-red-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-exclamation"></i> Overdue Reminders
+                </h2>
+                <div id="dashboard-tasks-overdue" class="space-y-3"></div>
+            </div>
+
+            <!-- Today Section -->
+            <div class="flex items-center gap-2 mb-4">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-bell text-violet-400"></i> Today's Reminders
+                </h2>
+                <span class="text-xs text-zinc-400 font-medium ml-auto bg-zinc-900 px-3 py-1 rounded-full border border-white/5" id="todayDateStr"></span>
+            </div>
+            <div id="dashboard-tasks-today" class="space-y-3 pb-10"></div>
         </div>
 
-        <!-- 2. Pipeline View -->
-        <div id="view-pipeline" class="view active">
+        <!-- 2. Clients View -->
+        <div id="view-clients" class="view">
+            <h2 class="text-2xl font-bold text-white mb-6">Clients Directory</h2>
+            
             <div class="relative mb-6 group">
                 <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 group-focus-within:text-violet-400 transition-colors"></i>
-                <input type="text" id="searchInput" onkeyup="renderPipeline()" placeholder="Search context or name..." 
-                    class="w-full bg-black/40 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-white placeholder-zinc-500 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all">
+                <input type="text" id="searchInput" onkeyup="renderClients()" placeholder="Search name, company, or phone..." 
+                    class="w-full bg-black/40 border border-white/10 rounded-2xl py-3.5 pl-11 pr-4 text-sm text-white placeholder-zinc-500 outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 transition-all shadow-inner">
             </div>
 
+            <!-- Filter Chips -->
             <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
-                <button class="tab-btn active flex-none px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-zinc-400 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/10" onclick="setFilter('All', this)">
-                    <span class="w-2 h-2 rounded-full bg-zinc-500"></span> All
-                </button>
-                <button class="tab-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/5" onclick="setFilter('Hot', this)">
-                    <span class="w-2 h-2 rounded-full bg-hot shadow-[0_0_8px_var(--tw-colors-hot)]"></span> Hot
-                </button>
-                <button class="tab-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/5" onclick="setFilter('Warm', this)">
-                    <span class="w-2 h-2 rounded-full bg-warm shadow-[0_0_8px_var(--tw-colors-warm)]"></span> Warm
-                </button>
-                <button class="tab-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/5" onclick="setFilter('Approval', this)">
-                    <span class="w-2 h-2 rounded-full bg-approval shadow-[0_0_8px_var(--tw-colors-approval)]"></span> Approval
-                </button>
-                <button class="tab-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/5" onclick="setFilter('Postponed', this)">
-                    <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span> Postponed
-                </button>
-                <button class="tab-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/5" onclick="setFilter('Converted', this)">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span> Converted
-                </button>
-                <button class="tab-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-sm flex items-center gap-2 transition-all hover:bg-white/5" onclick="setFilter('Dropped', this)">
-                    <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span> Dropped
-                </button>
+                <button class="status-btn active flex-none px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-zinc-300 font-bold text-xs transition-all hover:bg-white/10" onclick="setFilter('All', this)">All Clients</button>
+                <button class="status-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-xs transition-all hover:bg-white/5" onclick="setFilter('New Lead', this)">New Lead</button>
+                <button class="status-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-xs transition-all hover:bg-white/5" onclick="setFilter('Follow-up', this)">Follow-up</button>
+                <button class="status-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-xs transition-all hover:bg-white/5" onclick="setFilter('Update', this)">Update</button>
+                <button class="status-btn flex-none px-4 py-2 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-xs transition-all hover:bg-white/5" onclick="setFilter('Lost', this)">Lost</button>
             </div>
 
-            <div id="leads-container" class="space-y-4"></div>
+            <div id="clients-container" class="space-y-3 pb-10"></div>
         </div>
 
         <!-- 3. Calendar View -->
         <div id="view-calendar" class="view">
-            <div class="bg-zinc-900/50 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-xl mb-4">
+            <h2 class="text-2xl font-bold text-white mb-6">Schedule</h2>
+            <div class="bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-3xl p-5 sm:p-6 shadow-xl mb-4">
                 <div class="flex justify-between items-center mb-6">
                     <h3 id="calMonth" class="text-xl font-bold text-white tracking-tight">Month Year</h3>
                     <div class="flex gap-2">
@@ -175,242 +180,367 @@
             <p class="text-xs text-zinc-500 text-center font-medium mt-6">Tap a date to view tasks and add new clients for that day.</p>
         </div>
 
-        <!-- 4. History / Archive View -->
-        <div id="view-history" class="view">
-            <h2 class="text-2xl font-bold text-white mb-6">Client Archive</h2>
+        <!-- 4. Analytics View with Monthly Chart -->
+        <div id="view-analytics" class="view">
+            <h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-violet-400"></i> Analytics
+            </h2>
             
-            <!-- Statistics Panel -->
-            <div class="grid grid-cols-2 gap-3 mb-8">
-                <div class="bg-zinc-900/60 border border-white/5 rounded-2xl p-4">
-                    <div class="text-[0.65rem] text-zinc-500 font-extrabold tracking-wider uppercase mb-1">Total Approached</div>
-                    <div class="text-2xl font-black text-white" id="stat-total">0</div>
+            <!-- Total Leads Banner -->
+            <div class="bg-zinc-900 border border-white/10 p-5 rounded-2xl shadow-xl mb-4 flex justify-between items-center">
+                <div>
+                    <div class="text-zinc-400 text-xs font-bold uppercase tracking-wider mb-1">Total Leads</div>
+                    <div class="text-3xl font-bold text-white" id="stat-total">0</div>
                 </div>
-                <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4">
-                    <div class="text-[0.65rem] text-emerald-500/70 font-extrabold tracking-wider uppercase mb-1">Converted (Won)</div>
-                    <div class="text-2xl font-black text-emerald-400" id="stat-converted">0</div>
-                </div>
-                <div class="bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
-                    <div class="text-[0.65rem] text-red-500/70 font-extrabold tracking-wider uppercase mb-1">Dropped (Lost)</div>
-                    <div class="text-2xl font-black text-red-400" id="stat-dropped">0</div>
-                </div>
-                <div class="bg-violet-500/10 border border-violet-500/20 rounded-2xl p-4">
-                    <div class="text-[0.65rem] text-violet-500/70 font-extrabold tracking-wider uppercase mb-1">Active Pipeline</div>
-                    <div class="text-2xl font-black text-violet-400" id="stat-active">0</div>
+                <div class="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-xl text-zinc-500">
+                    <i class="fa-solid fa-users"></i>
                 </div>
             </div>
 
-            <!-- Archive Tabs -->
-            <div class="flex gap-2 mb-6">
-                <button class="archive-tab-btn active flex-1 py-3 rounded-xl border border-white/10 bg-white/5 text-violet-400 font-bold text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all" onclick="switchArchiveTab('pipeline', this)">
-                    <i class="fa-solid fa-layer-group"></i> Pipeline
-                </button>
-                <button class="archive-tab-btn flex-1 py-3 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all hover:bg-white/5" onclick="switchArchiveTab('converted', this)">
-                    <i class="fa-solid fa-trophy"></i> Converted
-                </button>
-                <button class="archive-tab-btn flex-1 py-3 rounded-xl border border-white/5 bg-transparent text-zinc-500 font-bold text-xs sm:text-sm flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 transition-all hover:bg-white/5" onclick="switchArchiveTab('dropped', this)">
-                    <i class="fa-solid fa-trash"></i> Dropped
-                </button>
+            <!-- Breakdown Grid -->
+            <div class="grid grid-cols-2 gap-3 mb-6">
+                <!-- New Leads -->
+                <div class="bg-blue-900/10 border border-blue-500/20 p-4 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="text-blue-300 text-[0.65rem] font-bold uppercase tracking-wider mb-1">New Leads</div>
+                    <div class="text-2xl font-bold text-blue-400" id="stat-new">0</div>
+                </div>
+                <!-- Follow-ups -->
+                <div class="bg-amber-900/10 border border-amber-500/20 p-4 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="text-amber-300 text-[0.65rem] font-bold uppercase tracking-wider mb-1">Follow-up Pending</div>
+                    <div class="text-2xl font-bold text-amber-400" id="stat-followup">0</div>
+                </div>
+                <!-- Ongoing / Update -->
+                <div class="bg-cyan-900/10 border border-cyan-500/20 p-4 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="text-cyan-300 text-[0.65rem] font-bold uppercase tracking-wider mb-1">Ongoing Clients</div>
+                    <div class="text-2xl font-bold text-cyan-400" id="stat-ongoing">0</div>
+                </div>
+                <!-- Lost -->
+                <div class="bg-red-900/10 border border-red-500/20 p-4 rounded-2xl shadow-lg relative overflow-hidden">
+                    <div class="text-red-300 text-[0.65rem] font-bold uppercase tracking-wider mb-1">Lost</div>
+                    <div class="text-2xl font-bold text-red-400" id="stat-lost">0</div>
+                </div>
             </div>
 
-            <div id="history-pipeline-section" class="archive-section block">
-                <div id="history-pipeline-container" class="space-y-2 pb-10"></div>
-            </div>
-            <div id="history-converted-section" class="archive-section hidden">
-                <div id="history-converted-container" class="space-y-2 pb-10"></div>
-            </div>
-            <div id="history-dropped-section" class="archive-section hidden">
-                <div id="history-dropped-container" class="space-y-2 pb-10"></div>
+            <!-- Individual Monthly Charts -->
+            <div class="space-y-4 mb-10">
+                <!-- Chart 1: New Leads -->
+                <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl">
+                    <h3 class="text-xs font-bold text-blue-400 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-simple"></i> New Leads Trend</h3>
+                    <div class="w-full h-32 relative">
+                        <canvas id="chartNew"></canvas>
+                    </div>
+                </div>
+                <!-- Chart 2: Follow-ups -->
+                <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl">
+                    <h3 class="text-xs font-bold text-amber-400 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-simple"></i> Follow-ups Trend</h3>
+                    <div class="w-full h-32 relative">
+                        <canvas id="chartFollowup"></canvas>
+                    </div>
+                </div>
+                <!-- Chart 3: Ongoing -->
+                <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl">
+                    <h3 class="text-xs font-bold text-cyan-400 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-simple"></i> Ongoing Clients Trend</h3>
+                    <div class="w-full h-32 relative">
+                        <canvas id="chartOngoing"></canvas>
+                    </div>
+                </div>
+                <!-- Chart 4: Lost -->
+                <div class="bg-zinc-900 border border-white/10 rounded-2xl p-4 shadow-xl">
+                    <h3 class="text-xs font-bold text-red-400 mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-simple"></i> Lost Clients Trend</h3>
+                    <div class="w-full h-32 relative">
+                        <canvas id="chartLost"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
     </div>
 
-    <!-- FLOATING REFRESH BUTTON -->
-    <button id="floatingRefreshBtn" onclick="forceRefresh()" class="fixed bottom-24 right-5 w-12 h-12 bg-zinc-900 border border-white/10 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 shadow-xl z-40 transition-all active:scale-95">
-        <i class="fa-solid fa-rotate-right"></i>
-    </button>
-
     <!-- BOTTOM NAV -->
-    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-zinc-950/85 backdrop-blur-xl border-t border-white/10 pb-safe pt-3 px-6 z-50 rounded-t-3xl sm:rounded-none sm:border-x">
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-zinc-950/90 backdrop-blur-xl border-t border-white/10 pb-safe pt-3 px-6 z-50 rounded-t-3xl sm:rounded-none sm:border-x">
         <div class="flex justify-between items-center pb-2">
-            <button class="nav-btn flex-1 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors" onclick="router('dashboard', this)">
-                <i class="fa-solid fa-house text-lg nav-icon transition-transform"></i>
-                <span class="text-[0.65rem] font-bold">Today</span>
+            <button id="nav-dashboard" class="nav-btn active flex-1 flex flex-col items-center gap-1.5 text-white" onclick="router('dashboard', this)">
+                <i class="fa-solid fa-house text-lg nav-icon transition-transform scale-110 text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]"></i>
+                <span class="text-[0.65rem] font-bold">Dashboard</span>
             </button>
-            <button class="nav-btn active flex-1 flex flex-col items-center gap-1.5 text-white" onclick="router('pipeline', this)">
-                <i class="fa-solid fa-layer-group text-lg nav-icon transition-transform scale-110 text-violet-400 drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]"></i>
-                <span class="text-[0.65rem] font-bold">Pipeline</span>
+            <button id="nav-analytics" class="nav-btn flex-1 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors" onclick="router('analytics', this)">
+                <i class="fa-solid fa-chart-pie text-lg nav-icon transition-transform"></i>
+                <span class="text-[0.65rem] font-bold">Analytics</span>
             </button>
-            <button class="nav-btn flex-1 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors" onclick="router('calendar', this)">
+            <button id="nav-calendar" class="nav-btn flex-1 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors" onclick="router('calendar', this)">
                 <i class="fa-solid fa-calendar text-lg nav-icon transition-transform"></i>
                 <span class="text-[0.65rem] font-bold">Calendar</span>
-            </button>
-            <button class="nav-btn flex-1 flex flex-col items-center gap-1.5 text-zinc-500 hover:text-zinc-300 transition-colors" onclick="router('history', this)">
-                <i class="fa-solid fa-folder-open text-lg nav-icon transition-transform"></i>
-                <span class="text-[0.65rem] font-bold">Archive</span>
             </button>
         </div>
     </nav>
 
     <!-- MODALS -->
 
-    <!-- Add Lead Modal -->
+    <!-- Add Client Modal -->
     <div id="addLeadModal" class="modal-backdrop fixed inset-0 z-[2000] flex items-end sm:items-center sm:justify-center">
-        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] overflow-y-auto">
+        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] overflow-y-auto no-scrollbar">
             <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('addLeadModal')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h2 class="text-2xl font-bold text-white mb-2">New Client 🚀</h2>
-            <p class="text-sm text-zinc-400 mb-6 font-medium">Entering for date: <span id="addLeadDateDisplay" class="text-white font-bold"></span></p>
+            <h2 class="text-2xl font-bold text-white mb-6">New Client</h2>
             
             <form id="addLeadForm" class="space-y-4">
                 <input type="hidden" id="addLeadDate">
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Client Name</label>
-                    <input type="text" id="addName" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="e.g. Rahul & Priya">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Client Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="addName" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600" placeholder="John Doe">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Company Name</label>
+                        <input type="text" id="addCompany" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600" placeholder="Acme Corp">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Phone Number</label>
-                    <input type="tel" id="addPhone" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="+91 98765 43210">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="addPhone" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600" placeholder="+1 234 567 890">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Email Address</label>
+                        <input type="email" id="addEmail" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600" placeholder="john@acme.com">
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Requirement</label>
-                    <select id="addReq" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all appearance-none">
-                        <option value="AD">📺 AD</option>
-                        <option value="REEL">📱 REEL</option>
-                        <option value="TVC">🎬 TVC</option>
-                        <option value="EDITING">✂️ EDITING</option>
-                    </select>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Service Required</label>
+                        <input type="text" id="addReq" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600" placeholder="e.g. Design">
+                    </div>
+                    <div>
+                        <!-- Presets for Source added here -->
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Lead Source</label>
+                        <select id="addSource" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all appearance-none">
+                            <option value="Unknown">Unknown</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Facebook">Facebook</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Cold Call">Cold Call</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Project Details</label>
-                    <textarea id="addDetails" rows="2" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="Budget, location, special requests..."></textarea>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Initial Status</label>
+                        <select id="addStatus" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all appearance-none">
+                            <option value="New Lead">New Lead</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Update">Update</option>
+                            <option value="Lost">Lost</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Set Initial Reminder</label>
+                        <input type="date" id="addFollowupDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all">
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl mt-6 hover:shadow-[0_0_15px_rgba(139,92,246,0.4)] active:scale-[0.98] transition-all">
-                    Add to Pipeline
+
+                <div>
+                    <label class="block text-xs font-bold text-zinc-400 mb-2">Notes</label>
+                    <textarea id="addDetails" rows="2" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600" placeholder="Initial requirements, budget, etc..."></textarea>
+                </div>
+
+                <button type="submit" class="w-full bg-violet-600 text-white font-bold py-3.5 rounded-xl mt-4 hover:bg-violet-500 active:scale-[0.98] transition-all">
+                    Create Client Profile
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- Log Update Modal -->
-    <div id="logModal" class="modal-backdrop fixed inset-0 z-[2000] flex items-end sm:items-center sm:justify-center">
+    <!-- Edit Client Info Modal -->
+    <div id="editClientModal" class="modal-backdrop fixed inset-0 z-[3000] flex items-end sm:items-center sm:justify-center">
         <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] overflow-y-auto no-scrollbar">
-            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('logModal')">
+            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('editClientModal')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h2 class="text-2xl font-bold text-white mb-6">Log Memory 🧠</h2>
+            <h2 class="text-2xl font-bold text-white mb-6">Edit Client Info</h2>
             
-            <form id="logForm" class="space-y-4">
-                <input type="hidden" id="logLeadId">
+            <form id="editClientForm" class="space-y-4">
+                <input type="hidden" id="editClientId">
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Update Date</label>
-                        <input type="date" id="logInteractionDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Client Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="editName" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600">
                     </div>
                     <div>
-                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Follow-up</label>
-                        <input type="date" id="logDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Company Name</label>
+                        <input type="text" id="editCompany" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600">
                     </div>
-                </div>
-                
-                <!-- Quick Dates -->
-                <div class="flex gap-2 mt-1 overflow-x-auto no-scrollbar pb-2">
-                    <button type="button" onclick="setQuickDate('logDate', 1)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Day</button>
-                    <button type="button" onclick="setQuickDate('logDate', 7)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Wk</button>
-                    <button type="button" onclick="setQuickDate('logDate', 14)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+2 Wks</button>
-                    <button type="button" onclick="setQuickDate('logDate', 30)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Mo</button>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">What happened?</label>
-                    <textarea id="logNote" rows="2" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="e.g. Call connected, discussed pricing."></textarea>
-                </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Next Action Step</label>
-                    <input type="text" id="logNextStep" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600" placeholder="e.g. Send final quotation PDF">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4 pt-2">
-                    <div>
-                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Pipeline Mood</label>
-                        <select id="logPriority" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all appearance-none">
-                            <option value="Hot">🔴 Hot</option>
-                            <option value="Warm">🟡 Warm</option>
-                            <option value="Approval">⏳ Approval</option>
-                            <option value="Cold">🔵 Cold</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Lead Status</label>
-                        <select id="logLeadStatus" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all appearance-none">
-                            <option value="Active">🟢 Active</option>
-                            <option value="Postponed">⏸️ Postponed</option>
-                            <option value="Converted">🎉 Converted</option>
-                            <option value="Dropped">🗑️ Dropped</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button type="submit" class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold py-3.5 rounded-xl mt-6 hover:shadow-[0_0_15px_rgba(139,92,246,0.4)] active:scale-[0.98] transition-all">
-                    Save Memory
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit History / Log Modal -->
-    <div id="editLogModal" class="modal-backdrop fixed inset-0 z-[3000] flex items-end sm:items-center sm:justify-center">
-        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] overflow-y-auto no-scrollbar">
-            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('editLogModal')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <h2 class="text-2xl font-bold text-white mb-6">Edit Memory ✏️</h2>
-            
-            <form id="editLogForm" class="space-y-4">
-                <input type="hidden" id="editLogId">
-                
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Update Date</label>
-                        <input type="date" id="editLogInteractionDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Phone Number <span class="text-red-500">*</span></label>
+                        <input type="tel" id="editPhone" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600">
                     </div>
                     <div>
-                        <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Follow-up</label>
-                        <input type="date" id="editLogDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Email Address</label>
+                        <input type="email" id="editEmail" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600">
                     </div>
                 </div>
 
-                <div class="flex gap-2 mt-1 overflow-x-auto no-scrollbar pb-2">
-                    <button type="button" onclick="setQuickDate('editLogDate', 1)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Day</button>
-                    <button type="button" onclick="setQuickDate('editLogDate', 7)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+1 Wk</button>
-                    <button type="button" onclick="setQuickDate('editLogDate', 14)" class="flex-none px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs font-bold text-zinc-300 hover:bg-white/10 transition-colors">+2 Wks</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Service Required</label>
+                        <input type="text" id="editReq" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-zinc-400 mb-2">Lead Source</label>
+                        <select id="editSource" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all appearance-none">
+                            <option value="Unknown">Unknown</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Facebook">Facebook</option>
+                            <option value="LinkedIn">LinkedIn</option>
+                            <option value="Website">Website</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Cold Call">Cold Call</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">What happened?</label>
-                    <textarea id="editLogNote" rows="2" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600"></textarea>
+                    <label class="block text-xs font-bold text-zinc-400 mb-2">Notes</label>
+                    <textarea id="editDetails" rows="2" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all placeholder-zinc-600"></textarea>
                 </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Next Action Step</label>
-                    <input type="text" id="editLogNextStep" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all placeholder-zinc-600">
-                </div>
-                
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Pipeline Mood</label>
-                    <select id="editLogPriority" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all appearance-none">
-                        <option value="Hot">🔴 Hot</option>
-                        <option value="Warm">🟡 Warm</option>
-                        <option value="Approval">⏳ Approval</option>
-                        <option value="Cold">🔵 Cold</option>
-                    </select>
-                </div>
-                
-                <button type="submit" class="w-full bg-zinc-100 text-zinc-900 font-bold py-3.5 rounded-xl mt-6 hover:bg-white active:scale-[0.98] transition-all">
+
+                <button type="submit" class="w-full bg-violet-600 text-white font-bold py-3.5 rounded-xl mt-4 hover:bg-violet-500 active:scale-[0.98] transition-all">
                     Save Changes
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Edit Note Modal -->
+    <div id="editNoteModal" class="modal-backdrop fixed inset-0 z-[3000] flex items-end sm:items-center sm:justify-center">
+        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative">
+            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('editNoteModal')">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-white mb-6">Edit Note</h2>
+            
+            <form id="editNoteForm" class="space-y-4">
+                <input type="hidden" id="editNoteId">
+                
+                <div>
+                    <label class="block text-xs font-bold text-zinc-400 mb-2">Note Update</label>
+                    <input type="text" id="editNoteText" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-zinc-400 mb-2">Next Reminder Date</label>
+                    <input type="date" id="editNoteDate" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 transition-all">
+                </div>
+
+                <button type="submit" class="w-full bg-violet-600 text-white font-bold py-3.5 rounded-xl mt-4 hover:bg-violet-500 active:scale-[0.98] transition-all">
+                    Update Note
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Client Details / History Modal -->
+    <div id="clientDetailsModal" class="modal-backdrop fixed inset-0 z-[2000] flex items-end sm:items-center sm:justify-center">
+        <div class="modal-panel w-full max-w-md bg-[#09090b] sm:border border-white/10 rounded-t-3xl sm:rounded-3xl h-[95vh] sm:h-[85vh] flex flex-col relative overflow-hidden shadow-2xl">
+            
+            <!-- Sticky Header -->
+            <div class="bg-zinc-900/90 backdrop-blur-md p-5 border-b border-white/10 flex-shrink-0 relative z-10 pt-6">
+                <button class="absolute top-4 right-4 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors" onclick="closeModal('clientDetailsModal')">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <button onclick="openEditClientModal()" class="absolute top-4 right-14 w-8 h-8 bg-black/40 rounded-full flex items-center justify-center text-zinc-400 hover:text-white transition-colors" title="Edit Client Details">
+                    <i class="fa-solid fa-pen text-xs"></i>
+                </button>
+                
+                <h2 id="detailsName" class="text-2xl font-bold text-white tracking-tight leading-tight mb-1">Client Name</h2>
+                <div id="detailsCompany" class="text-sm font-medium text-zinc-400 mb-4 flex items-center gap-1.5">
+                    <i class="fa-solid fa-building text-xs"></i> <span>Company Name</span>
+                </div>
+                
+                <div class="flex gap-2 mb-4">
+                    <div id="detailsStatusBadge" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 border border-white/5 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-zinc-500"></span> Status
+                    </div>
+                    <div id="detailsNextFollowup" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-black/30 text-zinc-400 border border-white/5 flex items-center gap-1.5">
+                        <i class="fa-regular fa-clock"></i> Next: --
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <a id="btnCall" href="#" class="flex-1 bg-white/5 hover:bg-white/10 text-white py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-phone"></i> Call
+                    </a>
+                    <a id="btnEmail" href="#" class="flex-1 bg-white/5 hover:bg-white/10 text-white py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-envelope"></i> Email
+                    </a>
+                    <button onclick="deleteLeadFromDetails()" class="w-10 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl flex justify-center items-center transition-colors">
+                        <i class="fa-solid fa-trash text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto no-scrollbar p-5 pb-32">
+                
+                <!-- Notes Section -->
+                <div class="mb-8">
+                    <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-2">Details & Notes</h3>
+                    <div class="bg-zinc-900/50 border border-white/5 rounded-xl p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="text-xs text-violet-400 font-bold flex items-center gap-1.5">
+                                <i class="fa-solid fa-tag"></i> <span id="detailsService">Service needed</span>
+                            </div>
+                            <div class="text-[0.65rem] text-zinc-400 font-bold bg-white/5 px-2 py-1 rounded">
+                                Source: <span id="detailsSource" class="text-violet-300">Unknown</span>
+                            </div>
+                        </div>
+                        <p id="detailsNotes" class="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap"></p>
+                    </div>
+                </div>
+
+                <!-- History Timeline -->
+                <div>
+                    <h3 class="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-4">Interaction History</h3>
+                    <div class="relative pl-3 space-y-6" id="historyTimeline">
+                        <!-- Timeline line -->
+                        <div class="absolute left-[15px] top-2 bottom-0 w-[2px] bg-white/5 rounded-full"></div>
+                        <!-- Items injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inline Add Update Form (Sticky Bottom) -->
+            <div class="absolute bottom-0 left-0 right-0 bg-zinc-950 border-t border-white/10 p-4 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+                <form id="inlineUpdateForm" class="flex flex-col gap-3">
+                    <input type="hidden" id="updateLeadId">
+                    
+                    <div class="flex gap-2">
+                        <select id="updateStatus" class="w-1/3 bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-violet-500 appearance-none">
+                            <option value="New Lead">New Lead</option>
+                            <option value="Follow-up">Follow-up</option>
+                            <option value="Update">Update</option>
+                            <option value="Lost">Lost</option>
+                        </select>
+                        <input type="date" id="updateFollowupDate" class="w-1/3 bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-sm font-bold text-white focus:outline-none focus:border-violet-500" required title="Set Next Reminder Date">
+                        <button type="submit" class="w-1/3 bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-xl text-sm transition-colors active:scale-95">
+                            Save Note
+                        </button>
+                    </div>
+                    <input type="text" id="updateNote" required class="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 placeholder-zinc-500" placeholder="Write a note and set next reminder date 👆...">
+                </form>
+            </div>
+
         </div>
     </div>
 
@@ -420,97 +550,13 @@
             <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('dayTasksModal')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <h2 id="dayTasksTitle" class="text-xl font-bold text-white mb-4">Schedule</h2>
+            <h2 id="dayTasksTitle" class="text-xl font-bold text-white mb-6">Schedule</h2>
             
-            <button id="addClientForDayBtn" class="w-full bg-violet-600/20 text-violet-400 border border-violet-500/30 font-bold py-3 rounded-xl mb-6 flex items-center justify-center gap-2 hover:bg-violet-600/30 transition-colors active:scale-[0.98]">
-                <i class="fa-solid fa-plus"></i> Add New Client Here
-            </button>
-
             <div class="flex-1 overflow-y-auto">
                 <div id="dayTasksContainer" class="space-y-3 mb-6"></div>
                 
-                <h3 class="text-sm font-bold text-zinc-500 mb-3 border-t border-white/10 pt-4" id="enteredClientsHeader">Clients Entered This Day</h3>
+                <h3 class="text-sm font-bold text-zinc-500 mb-3 border-t border-white/10 pt-4" id="enteredClientsHeader">Clients Created This Day</h3>
                 <div id="dayEnteredClientsContainer" class="space-y-3 pb-4"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Client History Modal -->
-    <div id="clientHistoryModal" class="modal-backdrop fixed inset-0 z-[2000] flex items-end sm:items-center sm:justify-center">
-        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] flex flex-col">
-            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors z-10" onclick="closeModal('clientHistoryModal')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            
-            <div class="mb-6 pr-8">
-                <h2 id="historyClientName" class="text-2xl font-bold text-white tracking-tight leading-tight mb-2">Client Name</h2>
-                <div class="flex flex-wrap gap-2 items-center mb-3" id="historyClientBadges"></div>
-                <div class="flex gap-2" id="historyClientActions"></div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto no-scrollbar pb-4 relative">
-                <!-- Timeline Line -->
-                <div class="absolute left-[15px] top-2 bottom-0 w-[2px] bg-white/10 rounded-full"></div>
-                <div id="historyTimeline" class="space-y-6 relative">
-                    <!-- History items injected here -->
-                </div>
-            </div>
-
-            <div class="pt-4 border-t border-white/10 mt-2">
-                <button onclick="logFromHistory()" class="w-full bg-violet-600/20 text-violet-400 border border-violet-500/30 font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:bg-violet-600/30 transition-colors active:scale-[0.98]">
-                    <i class="fa-solid fa-pen"></i> Log New Update
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Lead Modal -->
-    <div id="editLeadModal" class="modal-backdrop fixed inset-0 z-[2000] flex items-end sm:items-center sm:justify-center">
-        <div class="modal-panel w-full max-w-md bg-zinc-900 border-t sm:border border-white/10 rounded-t-3xl sm:rounded-3xl p-6 pb-safe relative max-h-[90vh] overflow-y-auto">
-            <button class="absolute top-5 right-5 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" onclick="closeModal('editLeadModal')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <h2 class="text-2xl font-bold text-white mb-6">Edit Client ✏️</h2>
-            
-            <form id="editLeadForm" class="space-y-4">
-                <input type="hidden" id="editLeadId">
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Client Name</label>
-                    <input type="text" id="editName" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
-                </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Phone Number</label>
-                    <input type="tel" id="editPhone" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all">
-                </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Requirement</label>
-                    <select id="editReq" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all appearance-none">
-                        <option value="AD">📺 AD</option>
-                        <option value="REEL">📱 REEL</option>
-                        <option value="TVC">🎬 TVC</option>
-                        <option value="EDITING">✂️ EDITING</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-extrabold text-zinc-400 uppercase tracking-wider mb-2">Project Details</label>
-                    <textarea id="editDetails" rows="2" class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all"></textarea>
-                </div>
-                <button type="submit" class="w-full bg-zinc-100 text-zinc-900 font-bold py-3.5 rounded-xl mt-6 hover:bg-white active:scale-[0.98] transition-all">
-                    Save Changes
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteConfirmModal" class="modal-backdrop fixed inset-0 z-[3000] flex items-center justify-center">
-        <div class="modal-panel w-full max-w-[320px] bg-zinc-900 border border-white/10 rounded-3xl p-6 text-center shadow-2xl">
-            <div class="text-4xl mb-4 text-red-500"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <h3 class="text-xl font-bold text-white mb-2">Delete Client?</h3>
-            <p class="text-sm text-zinc-400 mb-6">This action cannot be undone. All interactions and memory logs will be lost.</p>
-            <div class="flex gap-3">
-                <button onclick="closeModal('deleteConfirmModal')" class="flex-1 bg-white/5 hover:bg-white/10 text-white font-bold py-3 rounded-xl transition-all">Cancel</button>
-                <button id="confirmDeleteBtn" class="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold py-3 rounded-xl transition-all">Delete</button>
             </div>
         </div>
     </div>
@@ -532,11 +578,47 @@
         let currentMonth = todayObj.getMonth();
         let currentYear = todayObj.getFullYear();
 
-        document.getElementById('todayDateStr').innerText = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        // Chart.js Instances
+        let chartInstances = {};
+
+        document.getElementById('todayDateStr').innerText = todayObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
         // Empty Data Arrays
         let leads = [];
         let interactions = [];
+
+        // Restored Colorful Status Configuration
+        const STATUS_COLORS = {
+            "New Lead": { dot: "bg-blue-400", badge: "bg-blue-500/20 text-blue-400 border-blue-500/20" },
+            "Follow-up": { dot: "bg-amber-400", badge: "bg-amber-500/20 text-amber-400 border-amber-500/20" },
+            "Update": { dot: "bg-cyan-400", badge: "bg-cyan-500/20 text-cyan-400 border-cyan-500/20" },
+            "Lost": { dot: "bg-red-500", badge: "bg-red-500/20 text-red-400 border-red-500/20" },
+            // Keeping legacy styles hidden to prevent breaking old records
+            "Contacted": { dot: "bg-violet-400", badge: "bg-violet-500/20 text-violet-400 border-violet-500/20" },
+            "Proposal Sent": { dot: "bg-indigo-400", badge: "bg-indigo-500/20 text-indigo-400 border-indigo-500/20" },
+            "Negotiation": { dot: "bg-orange-400", badge: "bg-orange-500/20 text-orange-400 border-orange-500/20" },
+            "Won": { dot: "bg-emerald-500", badge: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+            "default": { dot: "bg-zinc-500", badge: "bg-zinc-800 text-zinc-300 border-white/5" }
+        };
+
+        // --- 📦 DATA PACKING UTILITIES ---
+        // Safely store Company, Email and Source in project_details without breaking schema
+        function packDetails(company, email, notes, source) {
+            return JSON.stringify({ company: company || '', email: email || '', notes: notes || '', source: source || 'Unknown' });
+        }
+
+        function unpackDetails(detailsString) {
+            if (!detailsString) return { company: '', email: '', notes: '', source: 'Unknown' };
+            try {
+                if (detailsString.trim().startsWith('{')) {
+                    const parsed = JSON.parse(detailsString);
+                    if (parsed.company !== undefined) return parsed;
+                }
+            } catch (e) {
+                // Fallback for legacy plain text data
+            }
+            return { company: '', email: '', notes: detailsString, source: 'Unknown' };
+        }
 
         // --- 🔄 DATABASE SYNC FUNCTIONS ---
         async function loadData() {
@@ -553,27 +635,31 @@
                 refreshAllViews();
             } catch (error) {
                 console.error("Error loading data:", error);
-                showToast("Database error check console", "⚠️");
+                showToast("Database sync error", "⚠️");
             }
         }
 
         function refreshAllViews() {
-            renderStats();
-            renderPipeline(); 
             renderDashboard();
+            renderClients(); 
             renderCalendar();
-            renderHistoryView();
+            renderAnalytics();
+            
+            // If details modal is open, refresh it
+            const detailsLeadId = document.getElementById('updateLeadId').value;
+            if (detailsLeadId && document.getElementById('clientDetailsModal').classList.contains('open')) {
+                openClientDetails(parseInt(detailsLeadId));
+            }
         }
 
         function router(viewId, element) {
-            document.querySelectorAll('.nav-btn').forEach(n => {
-                n.classList.remove('active', 'text-white');
-                n.classList.add('text-zinc-500');
-                const icon = n.querySelector('.nav-icon');
-                if(icon) icon.classList.remove('scale-110', 'text-violet-400', 'drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]');
-            });
-            
-            if(element) {
+            if (element) {
+                document.querySelectorAll('.nav-btn').forEach(n => {
+                    n.classList.remove('active', 'text-white');
+                    n.classList.add('text-zinc-500');
+                    const icon = n.querySelector('.nav-icon');
+                    if(icon) icon.classList.remove('scale-110', 'text-violet-400', 'drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]');
+                });
                 element.classList.remove('text-zinc-500');
                 element.classList.add('active', 'text-white');
                 const icon = element.querySelector('.nav-icon');
@@ -582,253 +668,238 @@
 
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(`view-${viewId}`).classList.add('active');
-
-            refreshAllViews();
-        }
-
-        function renderStats() {
-            let total = leads.length;
-            let converted = leads.filter(l => l.status === 'Converted').length;
-            let dropped = leads.filter(l => l.status === 'Dropped').length;
-            let active = leads.filter(l => l.status === 'Active' || l.status === 'Postponed').length;
-
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-converted').innerText = converted;
-            document.getElementById('stat-dropped').innerText = dropped;
-            document.getElementById('stat-active').innerText = active;
-        }
-
-        function setQuickDate(inputId, daysToAdd) {
-            const date = new Date();
-            date.setDate(date.getDate() + daysToAdd);
-            document.getElementById(inputId).value = date.toISOString().split('T')[0];
-        }
-
-        function renderDashboard() {
-            const todayContainer = document.getElementById('dashboard-tasks-today');
-            const upcomingContainer = document.getElementById('dashboard-tasks-upcoming');
-
-            const activeTasks = interactions.filter(i => {
-                const lead = leads.find(l => l.id === i.lead_id);
-                if (!lead || (lead.status !== 'Active' && lead.status !== 'Postponed')) return false;
-                
-                if (i.status === 'pending') return true;
-                if (i.status === 'done' && i.next_followup_date >= todayStr) return true;
-                
-                return false;
-            });
             
-            const todayTasks = activeTasks.filter(i => i.next_followup_date <= todayStr);
-            const upcomingTasks = activeTasks.filter(i => i.next_followup_date > todayStr).sort((a,b) => new Date(a.next_followup_date) - new Date(b.next_followup_date));
-
-            todayContainer.innerHTML = todayTasks.length ? '' : `
-                <div class="border border-white/5 bg-white/5 rounded-2xl p-6 text-center">
-                    <div class="text-3xl mb-2">☕</div>
-                    <p class="text-sm text-zinc-400 font-medium">All caught up for today!</p>
-                </div>`;
-            
-            todayTasks.forEach(task => {
-                const lead = leads.find(l => l.id === task.lead_id);
-                if(!lead) return;
-                todayContainer.innerHTML += generateTaskHTML(task, lead, true);
-            });
-
-            upcomingContainer.innerHTML = '';
-            if(upcomingTasks.length === 0) {
-                upcomingContainer.innerHTML = `
-                    <div class="border border-white/5 border-dashed rounded-2xl p-6 text-center">
-                        <p class="text-sm text-zinc-500 font-medium">No upcoming tasks scheduled.</p>
-                    </div>`;
-            } else {
-                let currentRenderDate = null;
-                upcomingTasks.forEach(task => {
-                    const lead = leads.find(l => l.id === task.lead_id);
-                    if(!lead) return;
-                    
-                    if (currentRenderDate !== task.next_followup_date) {
-                        currentRenderDate = task.next_followup_date;
-                        const dateLabel = new Date(currentRenderDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-                        upcomingContainer.innerHTML += `
-                            <div class="sticky top-0 bg-[#09090b]/90 backdrop-blur-md z-10 py-2 border-b border-white/5 mb-3">
-                                <h3 class="text-xs font-extrabold text-zinc-400 uppercase tracking-wider">${dateLabel}</h3>
-                            </div>
-                        `;
-                    }
-                    upcomingContainer.innerHTML += generateTaskHTML(task, lead, false);
-                });
+            if (viewId === 'analytics') {
+                renderAnalytics();
             }
         }
 
-        // --- UPDATED generateTaskHTML FUNCTION ---
-        function generateTaskHTML(task, lead, isToday) {
-            const isDone = task.status === 'done';
-            const cardBg = isDone ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-zinc-900/50 border-white/10 hover:bg-zinc-900';
-            const nameColor = isDone ? 'text-emerald-400 line-through opacity-70' : 'text-white';
-            const actionColor = isDone ? 'text-emerald-600/70 line-through' : 'text-zinc-400';
-            const badgeBg = isToday ? (isDone ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-violet-500/20 text-violet-400 border-violet-500/30') : (isDone ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-white/5 text-zinc-400 border-white/10');
+        // --- RENDER DASHBOARD ---
+        function renderDashboard() {
+            const todayContainer = document.getElementById('dashboard-tasks-today');
+            const overdueContainer = document.getElementById('dashboard-tasks-overdue');
+            const overdueWrapper = document.getElementById('dashboard-overdue-wrapper');
+
+            const activeTasks = [];
+            leads.forEach(lead => {
+                if (lead.status === 'Won' || lead.status === 'Lost' || lead.status === 'Converted' || lead.status === 'Dropped') return;
+                
+                const latestInt = interactions
+                    .filter(i => i.lead_id === lead.id)
+                    .sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+                    
+                if (latestInt) activeTasks.push({ task: latestInt, lead: lead });
+            });
+            
+            const todayTasks = activeTasks.filter(item => item.task.next_followup_date === todayStr);
+            const overdueTasks = activeTasks.filter(item => item.task.next_followup_date < todayStr);
+
+            if (overdueTasks.length > 0) {
+                overdueWrapper.classList.remove('hidden');
+                overdueContainer.innerHTML = '';
+                overdueTasks.forEach(item => {
+                    overdueContainer.innerHTML += generateTaskCard(item.task, item.lead, true);
+                });
+            } else {
+                overdueWrapper.classList.add('hidden');
+            }
+
+            todayContainer.innerHTML = todayTasks.length ? '' : `
+                <div class="border border-white/5 bg-white/5 rounded-2xl p-6 text-center">
+                    <div class="text-3xl mb-2 text-zinc-500"><i class="fa-solid fa-mug-hot"></i></div>
+                    <p class="text-sm text-zinc-400 font-medium">No reminders set for today!</p>
+                </div>`;
+            
+            todayTasks.forEach(item => {
+                todayContainer.innerHTML += generateTaskCard(item.task, item.lead, false);
+            });
+        }
+
+        function generateTaskCard(task, lead, isOverdue) {
+            const unpacked = unpackDetails(lead.project_details);
+            const companyDisplay = unpacked.company ? `<span class="text-zinc-500">•</span> ${unpacked.company}` : '';
+            
+            const borderClass = isOverdue ? 'border-red-500/30' : 'border-white/5';
+            const bgClass = isOverdue ? 'bg-red-950/10' : 'bg-zinc-900/50';
+            const dateColor = isOverdue ? 'text-red-400 bg-red-500/10' : 'text-violet-400 bg-violet-500/10';
+            const dateStr = isOverdue ? `Overdue: ${new Date(task.next_followup_date).toLocaleDateString('en-US', {month:'short', day:'numeric'})}` : 'TODAY';
+            
+            const statusConfig = STATUS_COLORS[lead.status] || STATUS_COLORS["default"];
 
             return `
-                <div class="${cardBg} border rounded-2xl p-4 transition-all mb-3 last:mb-0">
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="text-[0.65rem] font-extrabold ${badgeBg} border px-2 py-1 rounded-md inline-block">
-                            ${isToday ? 'TODAY' : new Date(task.next_followup_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                <div onclick="openClientDetails(${lead.id})" class="${bgClass} border ${borderClass} rounded-2xl p-4 transition-all mb-3 last:mb-0 cursor-pointer hover:bg-zinc-800 active:scale-[0.98]">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <div class="font-bold text-[17px] text-white flex items-center gap-2">
+                                ${lead.name}
+                            </div>
+                            <div class="text-[0.7rem] font-bold text-zinc-400 mt-0.5 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full ${statusConfig.dot}"></span> <span class="${statusConfig.badge.split(' ')[0]} ${statusConfig.badge.split(' ')[1]} px-1.5 rounded uppercase tracking-wider text-[0.6rem]">${lead.status}</span> ${companyDisplay}
+                            </div>
                         </div>
-                        <button onclick="openHistoryModal(${lead.id})" class="text-[0.65rem] font-bold text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-2 py-1 rounded border border-violet-500/20 transition-colors flex items-center gap-1">
-                            <i class="fa-solid fa-clock-rotate-left"></i> History
-                        </button>
+                        <div class="text-[0.65rem] font-extrabold ${dateColor} px-2 py-1 rounded-md border ${borderClass}">
+                            ${dateStr}
+                        </div>
                     </div>
                     
-                    <button onclick="openHistoryModal(${lead.id})" class="text-left w-full group mb-4 block">
-                        <div class="font-bold text-lg ${nameColor} leading-tight mb-1.5 group-hover:text-violet-400 transition-colors flex items-center gap-2">
-                            <i class="fa-solid fa-user-circle text-zinc-500 group-hover:text-violet-400 transition-colors"></i> ${lead.name}
-                        </div>
-                        <div class="text-sm font-medium ${actionColor} flex items-center gap-1.5">
-                            <i class="fa-solid fa-arrow-right text-[0.6rem] text-zinc-600"></i> ${task.next_action}
-                        </div>
-                    </button>
-                    
-                    <div class="flex gap-2 ${isDone ? 'hidden' : ''}">
-                        <button onclick="openLogModal(${lead.id})" class="flex-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 py-2 rounded-xl font-bold text-sm transition-colors active:scale-[0.98]">
-                            <i class="fa-solid fa-pen mr-1"></i> Log Update
-                        </button>
-                        
-                        <!-- Call Button -->
-                        <a href="tel:${lead.phone}" class="w-10 flex-shrink-0 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl font-bold text-sm flex items-center justify-center transition-colors active:scale-[0.98]" title="Call Client">
-                            <i class="fa-solid fa-phone"></i>
-                        </a>
-
-                        <!-- WhatsApp Button -->
-                        <a href="https://wa.me/${lead.phone}" target="_blank" class="w-10 flex-shrink-0 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-xl font-bold text-sm flex items-center justify-center transition-colors active:scale-[0.98]" title="WhatsApp Client">
-                            <i class="fa-brands fa-whatsapp text-lg"></i>
-                        </a>
-                        
-                        <!-- Drop Lead Button -->
-                        <button onclick="markStatus(${lead.id}, 'Dropped', ${task.id})" class="w-10 flex-shrink-0 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl font-bold text-sm flex items-center justify-center transition-colors active:scale-[0.98]" title="Drop Lead">
-                            ❌
-                        </button>
+                    <div class="text-sm font-medium text-zinc-300 bg-black/30 p-3 rounded-xl border border-white/5 mt-3 line-clamp-2">
+                        <span class="text-zinc-500 text-xs uppercase font-bold block mb-1">Previous Note:</span>
+                        "${task.note}"
                     </div>
-                    
-                    ${isDone ? `
-                    <div class="flex justify-between items-center mt-2">
-                        <div class="text-xs font-bold text-emerald-500/70 flex items-center gap-1.5"><i class="fa-solid fa-check-circle"></i> Task Completed</div>
-                        <button onclick="undoTask(${task.id})" class="text-xs font-bold text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95">
-                            <i class="fa-solid fa-rotate-left"></i> Undo
-                        </button>
-                    </div>` : ''}
                 </div>
             `;
         }
 
-        function renderPipeline() {
-            const container = document.getElementById('leads-container');
+        // --- RENDER CLIENTS (Directory) ---
+        function renderClients() {
+            const container = document.getElementById('clients-container');
             container.innerHTML = '';
             const query = document.getElementById('searchInput').value.toLowerCase();
             
-            let filteredLeads = 0;
+            let filteredCount = 0;
 
-            leads.forEach(lead => {
-                const latest = interactions.filter(i => i.lead_id === lead.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
-                if(!latest && lead.status !== 'Converted' && lead.status !== 'Dropped') return; 
+            const sortedLeads = [...leads].sort((a,b) => b.id - a.id);
+
+            sortedLeads.forEach(lead => {
+                const unpacked = unpackDetails(lead.project_details);
+                const latestInt = interactions
+                    .filter(i => i.lead_id === lead.id)
+                    .sort((a,b) => new Date(b.date) - new Date(a.date))[0];
                 
                 let show = false;
-                if (currentTab === 'All' && (lead.status === 'Active' || lead.status === 'Postponed')) show = true;
-                else if (['Hot', 'Warm', 'Approval'].includes(currentTab) && (lead.status === 'Active' || lead.status === 'Postponed') && latest?.priority === currentTab) show = true;
-                else if (currentTab === 'Converted' && lead.status === 'Converted') show = true;
-                else if (currentTab === 'Dropped' && lead.status === 'Dropped') show = true;
-                else if (currentTab === 'Postponed' && lead.status === 'Postponed') show = true;
+                if (currentTab === 'All') show = true; 
+                else if (currentTab === lead.status) show = true;
 
                 if (!show) return;
-                if(query && !lead.name.toLowerCase().includes(query) && !lead.project_details.toLowerCase().includes(query)) return;
                 
-                filteredLeads++;
+                if(query) {
+                    const searchStr = `${lead.name} ${unpacked.company} ${lead.phone}`.toLowerCase();
+                    if(!searchStr.includes(query)) return;
+                }
                 
-                let moodColorClass = "bg-zinc-500 shadow-none";
-                let moodLabel = "Cold";
-                if(latest?.priority === "Hot") { moodColorClass = "bg-hot shadow-[0_0_8px_var(--tw-colors-hot)]"; moodLabel = "Hot"; }
-                if(latest?.priority === "Warm") { moodColorClass = "bg-warm shadow-[0_0_8px_var(--tw-colors-warm)]"; moodLabel = "Warm"; }
-                if(latest?.priority === "Approval") { moodColorClass = "bg-approval shadow-[0_0_8px_var(--tw-colors-approval)]"; moodLabel = "Approval"; }
+                filteredCount++;
+                const statusConfig = STATUS_COLORS[lead.status] || STATUS_COLORS["default"];
+                let dateDisplay = '<span class="text-zinc-600">No reminder</span>';
                 
-                let statusBadge = '';
-                if (lead.status === 'Converted') {
-                    statusBadge = '<span class="text-[0.6rem] font-bold bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded ml-2">CONVERTED</span>';
-                    moodColorClass = "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
-                } else if (lead.status === 'Dropped') {
-                    statusBadge = '<span class="text-[0.6rem] font-bold bg-red-500/20 text-red-400 px-2 py-0.5 rounded ml-2">DROPPED</span>';
-                    moodColorClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
-                } else if (lead.status === 'Postponed') {
-                    statusBadge = '<span class="text-[0.6rem] font-bold bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded ml-2">PAUSED</span>';
-                    moodColorClass = "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]";
+                if (latestInt && latestInt.next_followup_date && lead.status !== 'Lost') {
+                    const diffDays = Math.ceil((new Date(latestInt.next_followup_date) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
+                    if (diffDays < 0) dateDisplay = `<span class="text-red-400 font-bold">Overdue Reminder</span>`;
+                    else if (diffDays === 0) dateDisplay = `<span class="text-violet-400 font-bold">Reminder Today</span>`;
+                    else dateDisplay = `<span class="text-zinc-400">Reminder: ${new Date(latestInt.next_followup_date).toLocaleDateString('en-US', {month:'short', day:'numeric'})}</span>`;
                 }
 
                 container.innerHTML += `
-                    <div class="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 relative overflow-hidden group transition-all hover:bg-zinc-900 mb-3">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex-1 min-w-0 pr-3">
-                                <button onclick="openHistoryModal(${lead.id})" class="text-left w-full group-hover:text-violet-400 transition-colors">
-                                    <div class="text-lg font-bold text-white flex items-center gap-2 mb-1 truncate">
-                                        <div class="w-2.5 h-2.5 flex-shrink-0 rounded-full ${moodColorClass}"></div>
-                                        <span class="truncate">${lead.name}</span>
-                                        ${statusBadge}
-                                    </div>
-                                    <div class="text-[0.65rem] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1.5 truncate">
-                                        <i class="fa-solid fa-tag"></i> ${lead.requirement} 
-                                        ${latest && lead.status === 'Active' ? `• <span class="text-zinc-400">${moodLabel}</span>` : ''}
-                                    </div>
+                    <div class="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 flex justify-between items-center transition-all hover:bg-zinc-800 active:scale-[0.98]">
+                        <div class="flex-1 min-w-0 pr-3 cursor-pointer" onclick="openClientDetails(${lead.id})">
+                            <div class="text-[16px] font-bold text-white mb-0.5 truncate">${lead.name}</div>
+                            ${unpacked.company ? `<div class="text-[0.7rem] font-medium text-zinc-400 truncate mb-1.5"><i class="fa-regular fa-building"></i> ${unpacked.company}</div>` : ''}
+                            <div class="flex items-center gap-2">
+                                <span class="text-[0.6rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${statusConfig.badge}">
+                                    ${lead.status}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0 flex flex-col items-end gap-2">
+                            <div class="text-[0.65rem] font-medium">${dateDisplay}</div>
+                            <div class="flex gap-2">
+                                <button onclick="deleteLeadFromList(${lead.id}, event)" class="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete Client">
+                                    <i class="fa-solid fa-trash text-[0.6rem]"></i>
+                                </button>
+                                <button onclick="openClientDetails(${lead.id})" class="w-7 h-7 rounded-full bg-violet-500/20 flex items-center justify-center text-violet-400 hover:bg-violet-500/30 transition-colors">
+                                    <i class="fa-solid fa-chevron-right text-[0.6rem]"></i>
                                 </button>
                             </div>
-                            ${latest ? `
-                            <div class="text-right shrink-0">
-                                <div class="text-[0.6rem] font-extrabold text-zinc-500 uppercase tracking-wider mb-1">Follow-up</div>
-                                <div class="text-xs font-bold ${new Date(latest.next_followup_date) <= new Date(todayStr) ? 'text-amber-400 bg-amber-400/10 border border-amber-400/20' : 'text-zinc-300 bg-white/5 border border-white/10'} px-2 py-1 rounded-md text-center inline-block">
-                                    ${new Date(latest.next_followup_date) <= new Date(todayStr) ? 'TODAY' : new Date(latest.next_followup_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                                </div>
-                            </div>` : ''}
                         </div>
-                        
-                        ${latest ? `
-                        <button onclick="openHistoryModal(${lead.id})" class="w-full text-left bg-black/40 hover:bg-black/60 transition-colors rounded-xl p-3 mb-3 border border-white/5 group/action">
-                            <div class="text-[0.65rem] font-bold text-zinc-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                                <i class="fa-solid fa-arrow-right text-violet-400/70"></i> Next Step
-                            </div>
-                            <div class="text-sm font-medium text-zinc-200 group-hover/action:text-white leading-snug line-clamp-2">
-                                ${latest.next_action}
-                            </div>
-                        </button>` : ''}
-                        
-                        ${lead.project_details ? `
-                        <div class="text-[0.7rem] text-zinc-500 leading-relaxed mb-4 line-clamp-1 px-1">
-                            <span class="font-bold">Notes:</span> ${lead.project_details}
-                        </div>` : '<div class="mb-2"></div>'}
-                        
-                        <div class="flex gap-2">
-                            <button onclick="openLogModal(${lead.id})" class="flex-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 py-2.5 rounded-xl font-bold text-sm transition-colors active:scale-[0.98] flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-pen"></i> Update
-                            </button>
-                            
-                            <a href="tel:${lead.phone}" class="w-11 h-11 flex-shrink-0 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl flex items-center justify-center transition-colors active:scale-[0.98]" title="Call Client">
-                                <i class="fa-solid fa-phone"></i>
-                            </a>
-
-                            <a href="https://wa.me/${lead.phone}" target="_blank" class="w-11 h-11 flex-shrink-0 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-xl flex items-center justify-center transition-colors active:scale-[0.98]" title="WhatsApp Client">
-                                <i class="fa-brands fa-whatsapp text-lg"></i>
-                            </a>
-                            
-                            <button onclick="openHistoryModal(${lead.id})" class="w-11 h-11 flex-shrink-0 bg-zinc-500/10 hover:bg-zinc-500/20 text-zinc-400 border border-zinc-500/20 rounded-xl flex items-center justify-center transition-colors active:scale-[0.98]" title="View History">
-                                <i class="fa-solid fa-clock-rotate-left"></i>
-                            </button>
-                        </div>
-                    </div>`;
+                    </div>
+                `;
             });
 
-            if(filteredLeads === 0) {
+            if(filteredCount === 0) {
                 container.innerHTML = `
                 <div class="py-12 text-center">
-                    <div class="text-4xl text-zinc-700 mb-3"><i class="fa-solid fa-ghost"></i></div>
-                    <p class="text-zinc-500 font-medium">No leads found in this view.</p>
+                    <div class="text-4xl text-zinc-800 mb-3"><i class="fa-solid fa-folder-open"></i></div>
+                    <p class="text-zinc-500 text-sm font-medium">No clients found.</p>
                 </div>`;
             }
         }
 
+        // --- RENDER ANALYTICS WITH GRAPH ---
+        function renderAnalytics() {
+            const total = leads.length;
+            const lost = leads.filter(l => l.status === 'Lost' || l.status === 'Dropped').length;
+            const newLeads = leads.filter(l => l.status === 'New Lead').length;
+            const followups = leads.filter(l => l.status === 'Follow-up').length;
+            const ongoing = leads.filter(l => l.status === 'Update').length;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-new').innerText = newLeads;
+            document.getElementById('stat-followup').innerText = followups;
+            document.getElementById('stat-ongoing').innerText = ongoing;
+            document.getElementById('stat-lost').innerText = lost;
+
+            renderCharts();
+        }
+
+        function renderCharts() {
+            ['chartNew', 'chartFollowup', 'chartOngoing', 'chartLost'].forEach(id => {
+                if (chartInstances[id]) chartInstances[id].destroy();
+            });
+
+            const currentYr = new Date().getFullYear();
+            const data = {
+                new: Array(12).fill(0),
+                followup: Array(12).fill(0),
+                ongoing: Array(12).fill(0),
+                lost: Array(12).fill(0)
+            };
+
+            leads.forEach(lead => {
+                if(lead.created_at) {
+                    const d = new Date(lead.created_at);
+                    if(d.getFullYear() === currentYr) {
+                        const m = d.getMonth();
+                        if (lead.status === 'New Lead') data.new[m]++;
+                        else if (lead.status === 'Follow-up') data.followup[m]++;
+                        else if (lead.status === 'Update') data.ongoing[m]++;
+                        else if (lead.status === 'Lost' || lead.status === 'Dropped') data.lost[m]++;
+                    }
+                }
+            });
+
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#71717a', stepSize: 1, font: {size: 10} }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { ticks: { color: '#71717a', font: {size: 9} }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false }, tooltip: { enabled: true } }
+            };
+            
+            const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            const ctxNew = document.getElementById('chartNew');
+            if(ctxNew) chartInstances['chartNew'] = new Chart(ctxNew.getContext('2d'), {
+                type: 'bar', data: { labels, datasets: [{ data: data.new, backgroundColor: 'rgba(96, 165, 250, 0.8)', borderRadius: 4 }] }, options: commonOptions
+            });
+
+            const ctxFollowup = document.getElementById('chartFollowup');
+            if(ctxFollowup) chartInstances['chartFollowup'] = new Chart(ctxFollowup.getContext('2d'), {
+                type: 'bar', data: { labels, datasets: [{ data: data.followup, backgroundColor: 'rgba(251, 191, 36, 0.8)', borderRadius: 4 }] }, options: commonOptions
+            });
+
+            const ctxOngoing = document.getElementById('chartOngoing');
+            if(ctxOngoing) chartInstances['chartOngoing'] = new Chart(ctxOngoing.getContext('2d'), {
+                type: 'bar', data: { labels, datasets: [{ data: data.ongoing, backgroundColor: 'rgba(34, 211, 238, 0.8)', borderRadius: 4 }] }, options: commonOptions
+            });
+
+            const ctxLost = document.getElementById('chartLost');
+            if(ctxLost) chartInstances['chartLost'] = new Chart(ctxLost.getContext('2d'), {
+                type: 'bar', data: { labels, datasets: [{ data: data.lost, backgroundColor: 'rgba(248, 113, 113, 0.8)', borderRadius: 4 }] }, options: commonOptions
+            });
+        }
+
+        // --- RENDER CALENDAR ---
         function changeMonth(dir) {
             currentMonth += dir;
             if(currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -851,13 +922,11 @@
                 const dateStr = `${currentYear}-${String(currentMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
                 
                 const hasTask = interactions.some(i => {
-                    if (i.next_followup_date !== dateStr || i.status !== 'pending') return false;
+                    if (i.next_followup_date !== dateStr) return false;
                     const lead = leads.find(l => l.id === i.lead_id);
-                    return lead && (lead.status === 'Active' || lead.status === 'Postponed');
+                    return lead && !['Won', 'Lost', 'Converted', 'Dropped'].includes(lead.status);
                 });
 
-                const hasNewLead = leads.some(l => l.created_at === dateStr);
-                
                 const isToday = dateStr === todayStr;
                 let dayClasses = "aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-semibold relative cursor-pointer transition-all active:scale-95 border ";
                 
@@ -867,23 +936,21 @@
                     dayClasses += "bg-white/5 border-white/5 text-zinc-300 hover:bg-white/10";
                 }
 
-                let dotsHtml = '<div class="absolute bottom-1 flex gap-1">';
-                if(hasTask) dotsHtml += `<div class="w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-amber-400 shadow-[0_0_5px_rgba(251,191,36,0.5)]'}"></div>`;
-                if(hasNewLead) dotsHtml += `<div class="w-1.5 h-1.5 rounded-full ${isToday ? 'bg-emerald-200' : 'bg-emerald-400 shadow-[0_0_5px_rgba(52,211,153,0.5)]'}"></div>`;
-                dotsHtml += '</div>';
+                let dotsHtml = '';
+                if(hasTask) dotsHtml = `<div class="absolute bottom-1.5 w-1.5 h-1.5 rounded-full ${isToday ? 'bg-white' : 'bg-amber-400'}"></div>`;
 
                 grid.innerHTML += `<div class="${dayClasses}" onclick="showDayTasks('${dateStr}')">${d}${dotsHtml}</div>`;
             }
         }
 
         function showDayTasks(dateStr) {
-            const addBtn = document.getElementById('addClientForDayBtn');
-            addBtn.onclick = () => { closeModal('dayTasksModal'); openAddModal(dateStr); };
-
-            const dayTasks = interactions.filter(i => {
-                if (i.next_followup_date !== dateStr) return false;
+            const dayTasks = [];
+            interactions.forEach(i => {
+                if (i.next_followup_date !== dateStr) return;
                 const lead = leads.find(l => l.id === i.lead_id);
-                return lead && (lead.status === 'Active' || lead.status === 'Postponed');
+                if (lead && lead.status !== 'Lost' && lead.status !== 'Dropped') {
+                    dayTasks.push({ task: i, lead: lead });
+                }
             });
             
             const enteredClients = leads.filter(l => l.created_at === dateStr);
@@ -897,63 +964,16 @@
             
             if(dayTasks.length === 0) {
                 container.innerHTML = `
-                    <div class="text-center py-4 border border-white/5 border-dashed rounded-xl">
-                        <p class="text-zinc-500 text-sm font-medium">No tasks scheduled.</p>
+                    <div class="text-center py-6 border border-white/5 border-dashed rounded-xl">
+                        <p class="text-zinc-500 text-sm font-medium">No reminders scheduled.</p>
                     </div>`;
             } else {
                 container.innerHTML = '';
-                dayTasks.forEach(task => {
-                    const lead = leads.find(l => l.id === task.lead_id);
-                    if(!lead) return;
-                    
-                    const isDone = task.status === 'done';
-                    const cardClass = isDone ? 'bg-emerald-900/20 border-emerald-500/30' : 'bg-black/30 border-white/10';
-                    const nameColor = isDone ? 'text-emerald-400 line-through opacity-70' : 'text-white';
-                    const actionColor = isDone ? 'text-emerald-600/70 line-through' : 'text-zinc-400';
-                    
-                    container.innerHTML += `
-                        <div class="${cardClass} border rounded-xl p-4">
-                            <div class="flex justify-between items-start mb-3">
-                                <button onclick="openHistoryModal(${lead.id}); closeModal('dayTasksModal');" class="text-left group flex-1">
-                                    <div class="text-lg font-bold ${nameColor} mb-1.5 group-hover:text-violet-400 transition-colors flex items-center gap-1.5 leading-tight">
-                                        <i class="fa-solid fa-user-circle text-zinc-500 group-hover:text-violet-400 transition-colors"></i> ${lead.name}
-                                    </div>
-                                    <div class="text-sm font-medium ${actionColor} flex items-center gap-1.5">
-                                        <i class="fa-solid fa-arrow-right text-[0.6rem] text-zinc-600"></i> ${task.next_action}
-                                    </div>
-                                </button>
-                                <button onclick="openHistoryModal(${lead.id}); closeModal('dayTasksModal');" class="text-[0.65rem] font-bold text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-2 py-1 rounded border border-violet-500/20 transition-colors flex items-center gap-1 shrink-0 ml-2">
-                                    <i class="fa-solid fa-clock-rotate-left"></i> History
-                                </button>
-                            </div>
-                            
-                            <!-- UPDATED DAY TASK BUTTONS TO MATCH MAIN DASHBOARD -->
-                            <div class="flex gap-2 ${isDone ? 'hidden' : ''} mt-4">
-                                <button onclick="openLogModal(${lead.id}); closeModal('dayTasksModal');" class="flex-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 py-2 rounded-lg font-bold text-xs transition-colors">
-                                    <i class="fa-solid fa-pen mr-1"></i> Log Update
-                                </button>
-                                
-                                <a href="tel:${lead.phone}" class="w-9 h-9 flex-shrink-0 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-lg flex items-center justify-center transition-colors" title="Call Client">
-                                    <i class="fa-solid fa-phone text-xs"></i>
-                                </a>
-                                
-                                <a href="https://wa.me/${lead.phone}" target="_blank" class="w-9 h-9 flex-shrink-0 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/20 rounded-lg flex items-center justify-center transition-colors" title="WhatsApp Client">
-                                    <i class="fa-brands fa-whatsapp"></i>
-                                </a>
-                                
-                                <button onclick="markStatus(${lead.id}, 'Dropped', ${task.id}); closeModal('dayTasksModal');" class="w-9 h-9 flex-shrink-0 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg flex items-center justify-center transition-colors" title="Drop Lead">
-                                    ❌
-                                </button>
-                            </div>
-                            
-                            ${isDone ? `
-                            <div class="flex justify-between items-center mt-2">
-                                <div class="text-[0.65rem] font-bold text-emerald-500/70"><i class="fa-solid fa-check-circle"></i> Completed</div>
-                                <button onclick="undoTask(${task.id}); closeModal('dayTasksModal');" class="text-[0.65rem] font-bold text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-2 py-1 rounded-md transition-colors flex items-center gap-1 active:scale-95">
-                                    <i class="fa-solid fa-rotate-left"></i> Undo
-                                </button>
-                            </div>` : ''}
-                        </div>`;
+                const seenLeads = new Set();
+                dayTasks.forEach(item => {
+                    if (seenLeads.has(item.lead.id)) return;
+                    seenLeads.add(item.lead.id);
+                    container.innerHTML += generateTaskCard(item.task, item.lead, false);
                 });
             }
 
@@ -964,208 +984,185 @@
                 enteredHeader.style.display = 'block';
                 enteredContainer.innerHTML = '';
                 enteredClients.forEach(lead => {
+                    const unpacked = unpackDetails(lead.project_details);
                     enteredContainer.innerHTML += `
-                        <div class="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 flex justify-between items-center">
+                        <div onclick="openClientDetails(${lead.id})" class="bg-zinc-800/50 border border-white/5 rounded-xl p-3 flex justify-between items-center cursor-pointer">
                             <div>
                                 <div class="text-sm font-bold text-white">${lead.name}</div>
-                                <div class="text-[0.65rem] text-zinc-400 uppercase tracking-wide">${lead.requirement}</div>
+                                <div class="text-[0.65rem] text-zinc-400 mt-0.5">${unpacked.company || lead.requirement || 'New Lead'}</div>
                             </div>
-                            <button onclick="openLogModal(${lead.id}); closeModal('dayTasksModal');" class="bg-white/5 p-2 rounded-lg text-zinc-400 hover:text-white transition-colors">
-                                <i class="fa-solid fa-arrow-right"></i>
-                            </button>
+                            <i class="fa-solid fa-chevron-right text-[0.6rem] text-zinc-500"></i>
+                        </div>
+                    `;
+                });
+            }
+            openModal('dayTasksModal');
+        }
+
+        // --- CLIENT DETAILS / HISTORY MODAL ---
+        function openClientDetails(leadId) {
+            const lead = leads.find(l => l.id === leadId);
+            if(!lead) return;
+            
+            const unpacked = unpackDetails(lead.project_details);
+            const leadInteractions = interactions.filter(i => i.lead_id === leadId).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const latestInt = leadInteractions[0];
+
+            document.getElementById('detailsName').innerText = lead.name;
+            document.getElementById('detailsCompany').innerHTML = unpacked.company ? `<i class="fa-solid fa-building text-xs"></i> <span>${unpacked.company}</span>` : '';
+            
+            const statusConfig = STATUS_COLORS[lead.status] || STATUS_COLORS["default"];
+            document.getElementById('detailsStatusBadge').className = `text-xs font-bold px-3 py-1.5 rounded-lg border flex items-center gap-1.5 ${statusConfig.badge}`;
+            document.getElementById('detailsStatusBadge').innerHTML = `<span class="w-2 h-2 rounded-full ${statusConfig.dot}"></span> ${lead.status}`;
+            
+            let nextDateStr = '--';
+            if (latestInt && latestInt.next_followup_date && lead.status !== 'Lost') {
+                nextDateStr = new Date(latestInt.next_followup_date).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+            }
+            document.getElementById('detailsNextFollowup').innerHTML = `<i class="fa-regular fa-bell"></i> Reminder: ${nextDateStr}`;
+
+            document.getElementById('btnCall').href = `tel:${lead.phone}`;
+            document.getElementById('btnEmail').href = unpacked.email ? `mailto:${unpacked.email}` : '#';
+            document.getElementById('btnEmail').style.opacity = unpacked.email ? '1' : '0.3';
+            document.getElementById('btnEmail').style.pointerEvents = unpacked.email ? 'auto' : 'none';
+
+            document.getElementById('detailsService').innerText = lead.requirement || 'No service specified';
+            document.getElementById('detailsSource').innerText = unpacked.source || 'Unknown';
+            document.getElementById('detailsNotes').innerText = unpacked.notes || 'No notes available.';
+
+            document.getElementById('updateLeadId').value = lead.id;
+            document.getElementById('updateStatus').value = lead.status;
+            
+            if (latestInt && latestInt.next_followup_date && new Date(latestInt.next_followup_date) >= new Date(todayStr)) {
+                // If there's an existing future reminder, keep it by default (good for pure updates/notes)
+                document.getElementById('updateFollowupDate').value = latestInt.next_followup_date;
+            } else {
+                // Otherwise set to 3 days from now
+                const defaultNext = new Date();
+                defaultNext.setDate(defaultNext.getDate() + 3);
+                document.getElementById('updateFollowupDate').value = defaultNext.toISOString().split('T')[0];
+            }
+            document.getElementById('updateNote').value = '';
+
+            const timeline = document.getElementById('historyTimeline');
+            timeline.innerHTML = '<div class="absolute left-[11px] top-2 bottom-0 w-[2px] bg-white/10 rounded-full"></div>';
+            
+            if(leadInteractions.length === 0) {
+                timeline.innerHTML += `<div class="pl-8 py-2 text-sm text-zinc-500 italic">No updates logged yet. Add one below!</div>`;
+            } else {
+                leadInteractions.forEach((i) => {
+                    const dateFormatted = new Date(i.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    timeline.innerHTML += `
+                        <div class="relative pl-8 pt-1 pb-1 group">
+                            <div class="absolute left-[6px] top-2.5 w-[12px] h-[12px] bg-[#09090b] border-[2px] border-zinc-600 rounded-full z-10 group-first:border-violet-500 group-first:bg-violet-900"></div>
+                            
+                            <div class="bg-zinc-900 border border-white/5 rounded-xl p-3 transition-colors hover:bg-zinc-800">
+                                <div class="text-[0.65rem] font-bold text-zinc-400 mb-1.5 flex justify-between items-center">
+                                    <span>${dateFormatted}</span>
+                                    <div class="flex gap-2">
+                                        <button onclick="openEditNoteModal(${i.id})" class="text-zinc-500 hover:text-white transition-colors"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="deleteNote(${i.id})" class="text-zinc-500 hover:text-red-400 transition-colors"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="text-sm text-zinc-200 leading-snug">"${i.note}"</div>
+                            </div>
                         </div>
                     `;
                 });
             }
 
-            openModal('dayTasksModal');
+            closeModal('dayTasksModal');
+            openModal('clientDetailsModal');
         }
 
-        function renderHistoryView() {
-            const pipelineContainer = document.getElementById('history-pipeline-container');
-            const convertedContainer = document.getElementById('history-converted-container');
-            const droppedContainer = document.getElementById('history-dropped-container');
-
-            pipelineContainer.innerHTML = '';
-            convertedContainer.innerHTML = '';
-            droppedContainer.innerHTML = '';
-
-            let pipelineCount = 0;
-            let convertedCount = 0;
-            let droppedCount = 0;
-
-            const sortedLeads = [...leads].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-
-            sortedLeads.forEach(lead => {
-                const latest = interactions.filter(i => i.lead_id === lead.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
-                const lastUpdatedStr = latest ? new Date(latest.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No updates';
-
-                const cardHTML = `
-                    <div class="bg-zinc-900/60 border border-white/10 rounded-xl p-4 flex justify-between items-center transition-all hover:bg-zinc-800 cursor-pointer active:scale-[0.98]" onclick="openHistoryModal(${lead.id})">
-                        <div>
-                            <div class="text-[15px] font-bold text-white mb-1 flex items-center gap-2">
-                                ${lead.name}
-                                ${lead.status === 'Postponed' ? '<span class="text-[0.55rem] bg-amber-500/20 text-amber-400 px-1.5 py-0.5 rounded uppercase">Paused</span>' : ''}
-                            </div>
-                            <div class="text-[0.7rem] text-zinc-400 font-medium">
-                                <span class="text-zinc-500 mr-1"><i class="fa-solid fa-tag text-[0.6rem]"></i> ${lead.requirement}</span> &bull; 
-                                Updated: ${lastUpdatedStr}
-                            </div>
-                        </div>
-                        <button class="w-8 h-8 rounded-full bg-white/5 flex flex-shrink-0 items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
-                            <i class="fa-solid fa-chevron-right text-xs"></i>
-                        </button>
-                    </div>
-                `;
-
-                if (lead.status === 'Active' || lead.status === 'Postponed') {
-                    pipelineContainer.innerHTML += cardHTML;
-                    pipelineCount++;
-                } else if (lead.status === 'Converted') {
-                    convertedContainer.innerHTML += cardHTML;
-                    convertedCount++;
-                } else if (lead.status === 'Dropped') {
-                    droppedContainer.innerHTML += cardHTML;
-                    droppedCount++;
-                }
-            });
-
-            if (pipelineCount === 0) pipelineContainer.innerHTML = '<div class="text-sm text-zinc-500 font-medium py-2 text-center">No active clients in pipeline.</div>';
-            if (convertedCount === 0) convertedContainer.innerHTML = '<div class="text-sm text-zinc-500 font-medium py-2 text-center">No converted clients yet. Keep pushing!</div>';
-            if (droppedCount === 0) droppedContainer.innerHTML = '<div class="text-sm text-zinc-500 font-medium py-2 text-center">No dropped clients.</div>';
-        }
-
-        function switchArchiveTab(tabId, el) {
-            document.querySelectorAll('.archive-tab-btn').forEach(btn => {
-                btn.classList.remove('active', 'border-white/10', 'bg-white/5', 'text-violet-400', 'text-emerald-400', 'text-red-400');
-                btn.classList.add('border-white/5', 'bg-transparent', 'text-zinc-500');
-            });
+        async function deleteLeadFromDetails() {
+            const leadId = document.getElementById('updateLeadId').value;
+            if(!leadId) return;
+            if(!confirm("Are you sure you want to delete this client? All history will be lost.")) return;
             
-            el.classList.remove('border-white/5', 'bg-transparent', 'text-zinc-500');
-            el.classList.add('active', 'border-white/10', 'bg-white/5');
-
-            if(tabId === 'pipeline') el.classList.add('text-violet-400');
-            if(tabId === 'converted') el.classList.add('text-emerald-400');
-            if(tabId === 'dropped') el.classList.add('text-red-400');
-
-            document.querySelectorAll('.archive-section').forEach(sec => {
-                sec.classList.remove('block');
-                sec.classList.add('hidden');
-            });
-            document.getElementById(`history-${tabId}-section`).classList.remove('hidden');
-            document.getElementById(`history-${tabId}-section`).classList.add('block');
+            closeModal('clientDetailsModal');
+            showToast('Deleting client...', '🗑️');
+            
+            await supabaseClient.from('leads').delete().eq('id', leadId);
+            await loadData();
+            showToast('Client deleted', '✅');
         }
 
-        // Modals & UI Actions
+
+        // --- MODALS & UI HELPERS ---
         function openModal(id) { document.getElementById(id).classList.add('open'); }
         function closeModal(id) { document.getElementById(id).classList.remove('open'); }
         
         function openAddModal(dateStr = todayStr) {
             document.getElementById('addLeadDate').value = dateStr;
-            const displayDate = new Date(dateStr).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-            document.getElementById('addLeadDateDisplay').innerText = displayDate;
+            document.getElementById('addFollowupDate').value = dateStr; 
+            document.getElementById('addSource').value = 'Unknown'; 
             openModal('addLeadModal');
         }
 
-        function openLogModal(id) {
-            const lead = leads.find(l => l.id === id);
-            document.getElementById('logLeadId').value = id;
-            document.getElementById('logInteractionDate').value = todayStr; // Editable default to today
-            document.getElementById('logDate').value = todayStr; // Follow-up default
-            if (lead) document.getElementById('logLeadStatus').value = lead.status;
-            openModal('logModal');
-        }
-
-        let currentHistoryLeadId = null;
-
-        function openHistoryModal(id) {
-            currentHistoryLeadId = id;
-            const lead = leads.find(l => l.id === id);
+        function openEditClientModal() {
+            const leadId = document.getElementById('updateLeadId').value;
+            const lead = leads.find(l => l.id == leadId);
             if(!lead) return;
+            const unpacked = unpackDetails(lead.project_details);
 
-            document.getElementById('historyClientName').innerText = lead.name;
-            
-            let statusClass = "bg-zinc-500/20 text-zinc-400";
-            if(lead.status === 'Converted') statusClass = "bg-emerald-500/20 text-emerald-400";
-            if(lead.status === 'Dropped') statusClass = "bg-red-500/20 text-red-400";
-            if(lead.status === 'Postponed') statusClass = "bg-amber-500/20 text-amber-400";
-            if(lead.status === 'Active') statusClass = "bg-violet-500/20 text-violet-400";
+            document.getElementById('editClientId').value = lead.id;
+            document.getElementById('editName').value = lead.name;
+            document.getElementById('editCompany').value = unpacked.company;
+            document.getElementById('editPhone').value = lead.phone;
+            document.getElementById('editEmail').value = unpacked.email;
+            document.getElementById('editReq').value = lead.requirement;
+            document.getElementById('editSource').value = unpacked.source || 'Unknown';
+            document.getElementById('editDetails').value = unpacked.notes;
 
-            document.getElementById('historyClientBadges').innerHTML = `
-                <span class="text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${statusClass}">${lead.status}</span>
-                <span class="text-[0.65rem] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-zinc-400"><i class="fa-solid fa-tag"></i> ${lead.requirement}</span>
-            `;
-
-            document.getElementById('historyClientActions').innerHTML = `
-                <button onclick="openEditModal(${lead.id})" class="px-3 py-1.5 text-xs font-bold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-lg flex items-center gap-1.5 transition-colors">
-                    <i class="fa-solid fa-pen"></i> Edit
-                </button>
-                <button onclick="deleteLead(${lead.id})" class="px-3 py-1.5 text-xs font-bold text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 rounded-lg flex items-center gap-1.5 transition-colors">
-                    <i class="fa-solid fa-trash"></i> Delete
-                </button>
-            `;
-
-            const timeline = document.getElementById('historyTimeline');
-            timeline.innerHTML = '';
-
-            const leadInteractions = interactions.filter(i => i.lead_id === id).sort((a,b) => new Date(b.date) - new Date(a.date));
-
-            if(leadInteractions.length === 0) {
-                timeline.innerHTML = `<div class="pl-10 py-4 text-sm text-zinc-500 italic">No updates logged yet.</div>`;
-            } else {
-                leadInteractions.forEach((i) => {
-                    const dateFormatted = new Date(i.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                    timeline.innerHTML += `
-                        <div class="relative pl-10 pt-2 pb-2 group">
-                            <!-- Timeline dot -->
-                            <div class="absolute left-[11px] top-4 w-[10px] h-[10px] bg-zinc-900 border-2 border-violet-500 rounded-full z-10 group-first:bg-violet-500 group-first:shadow-[0_0_8px_rgba(139,92,246,0.8)]"></div>
-                            
-                            <div class="bg-black/20 border border-white/5 rounded-xl p-4 transition-colors hover:bg-black/40">
-                                <div class="flex justify-between items-start mb-2">
-                                    <div>
-                                        <span class="text-xs font-bold text-violet-400 mr-2">${dateFormatted}</span>
-                                        ${i.status === 'done' ? '<span class="text-[0.6rem] text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i></span>' : '<span class="text-[0.6rem] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">PENDING</span>'}
-                                    </div>
-                                    <button onclick="openEditLogModal(${i.id})" class="text-zinc-500 hover:text-white transition-colors bg-white/5 hover:bg-white/10 w-7 h-7 rounded-lg flex justify-center items-center">
-                                        <i class="fa-solid fa-pen text-[0.65rem]"></i>
-                                    </button>
-                                </div>
-                                <div class="text-sm text-white font-medium mb-3 leading-relaxed">"${i.note}"</div>
-                                
-                                <div class="bg-white/5 rounded-lg p-3 border border-white/5">
-                                    <div class="text-[0.65rem] font-extrabold text-zinc-500 uppercase tracking-wider mb-1">Next Action Set:</div>
-                                    <div class="text-xs font-bold text-zinc-300">${i.next_action}</div>
-                                    <div class="text-[0.65rem] text-zinc-500 mt-1">Scheduled for: ${new Date(i.next_followup_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            openModal('clientHistoryModal');
+            openModal('editClientModal');
         }
 
-        // New function to open edit modal for a specific history log item
-        function openEditLogModal(intId) {
-            const intData = interactions.find(x => x.id === intId);
-            if (!intData) return;
-            
-            document.getElementById('editLogId').value = intData.id;
-            document.getElementById('editLogInteractionDate').value = intData.date;
-            document.getElementById('editLogNote').value = intData.note;
-            document.getElementById('editLogNextStep').value = intData.next_action;
-            document.getElementById('editLogDate').value = intData.next_followup_date;
-            document.getElementById('editLogPriority').value = intData.priority || 'Warm';
-            
-            openModal('editLogModal');
-        }
+        document.getElementById('editClientForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const leadId = document.getElementById('editClientId').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
 
-        function logFromHistory() {
-            if(currentHistoryLeadId) {
-                closeModal('clientHistoryModal');
-                setTimeout(() => { openLogModal(currentHistoryLeadId); }, 300); 
+            const name = document.getElementById('editName').value;
+            const phone = document.getElementById('editPhone').value;
+            const req = document.getElementById('editReq').value;
+            const packedDetails = packDetails(
+                document.getElementById('editCompany').value,
+                document.getElementById('editEmail').value,
+                document.getElementById('editDetails').value,
+                document.getElementById('editSource').value
+            );
+
+            const { error } = await supabaseClient.from('leads').update({
+                name: name,
+                phone: phone,
+                requirement: req,
+                project_details: packedDetails
+            }).eq('id', leadId);
+
+            submitBtn.innerText = "Save Changes"; submitBtn.disabled = false;
+
+            if (error) {
+                showToast("Error updating client", "❌");
+                return;
             }
+
+            closeModal('editClientModal');
+            showToast('Client updated!', '✨');
+            await loadData();
+        });
+
+
+        function setFilter(prio, el) {
+            currentTab = prio;
+            document.querySelectorAll('.status-btn').forEach(t => {
+                t.classList.remove('active', 'border-white/10', 'bg-white/5', 'text-zinc-300');
+                t.classList.add('border-white/5', 'bg-transparent', 'text-zinc-500');
+            });
+            el.classList.remove('border-white/5', 'bg-transparent', 'text-zinc-500');
+            el.classList.add('active', 'border-white/10', 'bg-white/5', 'text-zinc-300');
+            renderClients();
         }
 
         function showToast(msg, icon = '✅') {
@@ -1180,120 +1177,43 @@
             }, 3000);
         }
 
-        function setFilter(prio, el) {
-            currentTab = prio;
-            document.querySelectorAll('.tab-btn').forEach(t => {
-                t.classList.remove('active', 'border-white/10', 'bg-white/5', 'text-zinc-400');
-                t.classList.add('border-white/5', 'bg-transparent', 'text-zinc-500');
-            });
-            el.classList.remove('border-white/5', 'bg-transparent', 'text-zinc-500');
-            el.classList.add('active', 'border-white/10', 'bg-white/5', 'text-zinc-400');
-            renderPipeline();
-        }
-
-        // --- 🟢 SUPABASE MUTATIONS ---
-
         async function forceRefresh() {
-            const btn = document.getElementById('floatingRefreshBtn');
-            const icon = btn.querySelector('i');
+            const icon = document.getElementById('topRefreshBtn').querySelector('i');
             icon.classList.add('animate-spin', 'text-violet-400');
             await loadData();
-            showToast('Synced with Cloud!', '☁️');
+            showToast('Data Synced!', '☁️');
             icon.classList.remove('animate-spin', 'text-violet-400');
         }
 
-        function openEditModal(leadId) {
-            const lead = leads.find(l => l.id === leadId);
-            if (!lead) return;
-            document.getElementById('editLeadId').value = lead.id;
-            document.getElementById('editName').value = lead.name;
-            document.getElementById('editPhone').value = lead.phone;
-            document.getElementById('editReq').value = lead.requirement;
-            document.getElementById('editDetails').value = lead.project_details;
-            closeModal('clientHistoryModal');
-            openModal('editLeadModal');
-        }
 
-        function deleteLead(leadId) {
-            openModal('deleteConfirmModal');
-            document.getElementById('confirmDeleteBtn').onclick = async () => {
-                closeModal('deleteConfirmModal');
-                closeModal('clientHistoryModal');
-                
-                const btn = document.getElementById('floatingRefreshBtn');
-                const icon = btn.querySelector('i');
-                icon.classList.add('animate-spin');
-                
-                await supabaseClient.from('leads').delete().eq('id', leadId);
-                
-                showToast('Client deleted', '🗑️');
-                await loadData();
-                icon.classList.remove('animate-spin');
-            };
-        }
-
-        async function markDone(taskId) {
-            const task = interactions.find(i => i.id === taskId);
-            if (task) task.status = 'done';
-            refreshAllViews();
-            showToast('Task Cleared!', '✅');
-
-            await supabaseClient.from('interactions').update({ status: 'done' }).eq('id', taskId);
-            await loadData(); 
-        }
-
-        async function undoTask(taskId) {
-            const task = interactions.find(i => i.id === taskId);
-            if (task) task.status = 'pending';
-            refreshAllViews();
-            showToast('Task Restored!', '⏪');
-
-            await supabaseClient.from('interactions').update({ status: 'pending' }).eq('id', taskId);
-            await loadData(); 
-        }
-
-        async function markStatus(leadId, newStatus, taskId) {
-            await supabaseClient.from('leads').update({ status: newStatus }).eq('id', leadId);
-
-            if (taskId) {
-                await supabaseClient.from('interactions').update({ status: 'done' }).eq('id', taskId);
-            } else {
-                await supabaseClient.from('interactions')
-                    .update({ status: 'done' })
-                    .eq('lead_id', leadId)
-                    .eq('status', 'pending');
-            }
-
-            let msg = 'Status Updated!';
-            let icon = '✅';
-            if(newStatus === 'Converted') { msg = 'Client Converted!'; icon = '🎉'; }
-            else if(newStatus === 'Dropped') { msg = 'Lead Dropped'; icon = '🗑️'; }
-            else if(newStatus === 'Postponed') { msg = 'Lead Postponed'; icon = '⏸️'; }
-
-            showToast(msg, icon);
-            await loadData(); 
-        }
-
-        // Form Submissions
+        // --- FORM SUBMISSIONS ---
+        
+        // Add New Client
         document.getElementById('addLeadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const creationDate = document.getElementById('addLeadDate').value || todayStr;
             const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.innerText = "Adding..."; submitBtn.disabled = true;
+            submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
+
+            const creationDate = document.getElementById('addLeadDate').value;
+            const company = document.getElementById('addCompany').value;
+            const email = document.getElementById('addEmail').value;
+            const notes = document.getElementById('addDetails').value;
+            const source = document.getElementById('addSource').value;
+            
+            const packedDetails = packDetails(company, email, notes, source);
 
             const { data: leadData, error: leadErr } = await supabaseClient.from('leads').insert([{
                 created_at: creationDate,
                 name: document.getElementById('addName').value,
                 phone: document.getElementById('addPhone').value,
                 requirement: document.getElementById('addReq').value,
-                project_details: document.getElementById('addDetails').value,
-                status: "Active"
+                project_details: packedDetails,
+                status: document.getElementById('addStatus').value
             }]).select();
 
             if (leadErr) {
-                console.error(leadErr);
                 showToast("Error: " + leadErr.message, "❌");
-                submitBtn.innerText = "Add to Pipeline"; submitBtn.disabled = false;
+                submitBtn.innerText = "Create Client Profile"; submitBtn.disabled = false;
                 return;
             }
 
@@ -1302,124 +1222,113 @@
                 const { error: intErr } = await supabaseClient.from('interactions').insert([{
                     lead_id: insertedLead.id,
                     date: creationDate,
-                    note: "Added to pipeline",
-                    next_action: "Initial Contact / Follow Up",
+                    note: "Added to portal",
+                    next_action: "Initial Follow Up",
                     priority: "Warm",
-                    next_followup_date: creationDate,
+                    next_followup_date: document.getElementById('addFollowupDate').value,
                     status: "pending"
                 }]);
-                
-                if (intErr) {
-                     console.error(intErr);
-                     showToast("Added client, but failed to add interaction: " + intErr.message, "⚠️");
-                }
+                if (intErr) console.error(intErr);
             }
             
-            submitBtn.innerText = "Add to Pipeline"; submitBtn.disabled = false;
+            submitBtn.innerText = "Create Client Profile"; submitBtn.disabled = false;
             e.target.reset();
             closeModal('addLeadModal');
-            showToast('New client added!', '🚀');
+            showToast('New client added!', '🎉');
             await loadData();
         });
 
-        document.getElementById('logForm').addEventListener('submit', async (e) => {
+        // Inline Update (Add Note)
+        document.getElementById('inlineUpdateForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const leadId = parseInt(document.getElementById('logLeadId').value);
-            const newStatus = document.getElementById('logLeadStatus').value;
-            
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
 
+            const leadId = parseInt(document.getElementById('updateLeadId').value);
+            const newStatus = document.getElementById('updateStatus').value;
+            const newNote = document.getElementById('updateNote').value;
+            const nextFollowup = document.getElementById('updateFollowupDate').value;
+            
             const { error: leadErr } = await supabaseClient.from('leads').update({ status: newStatus }).eq('id', leadId);
             if (leadErr) {
                 showToast("Error updating status: " + leadErr.message, "❌");
-                submitBtn.innerText = "Save Memory"; submitBtn.disabled = false;
+                submitBtn.innerText = "Save Note"; submitBtn.disabled = false;
                 return;
             }
 
-            await supabaseClient.from('interactions').update({ status: 'done' }).eq('lead_id', leadId).eq('status', 'pending');
+            await supabaseClient.from('interactions')
+                .update({ status: 'done' })
+                .eq('lead_id', leadId)
+                .eq('status', 'pending');
 
             const { error: intErr } = await supabaseClient.from('interactions').insert([{
                 lead_id: leadId,
-                date: document.getElementById('logInteractionDate').value, 
-                note: document.getElementById('logNote').value,
-                next_action: document.getElementById('logNextStep').value,
-                priority: document.getElementById('logPriority').value,
-                next_followup_date: document.getElementById('logDate').value,
+                date: todayStr,
+                note: newNote,
+                next_action: "Follow Up",
+                priority: "Warm",
+                next_followup_date: nextFollowup,
                 status: "pending"
             }]);
 
             if (intErr) {
-                showToast("Error saving log: " + intErr.message, "❌");
-                submitBtn.innerText = "Save Memory"; submitBtn.disabled = false;
+                showToast("Error saving note: " + intErr.message, "❌");
+                submitBtn.innerText = "Save Note"; submitBtn.disabled = false;
                 return;
             }
             
-            submitBtn.innerText = "Save Memory"; submitBtn.disabled = false;
-            e.target.reset();
-            closeModal('logModal');
-            showToast('Update logged successfully!', '🧠');
+            submitBtn.innerText = "Save Note"; submitBtn.disabled = false;
+            document.getElementById('updateNote').value = '';
+            showToast('Update saved successfully!', '📝');
+            
             await loadData();
         });
 
-        document.getElementById('editLeadForm').addEventListener('submit', async (e) => {
+        // Note Management
+        function openEditNoteModal(noteId) {
+            const note = interactions.find(i => i.id === noteId);
+            if(!note) return;
+            document.getElementById('editNoteId').value = note.id;
+            document.getElementById('editNoteText').value = note.note;
+            document.getElementById('editNoteDate').value = note.next_followup_date;
+            openModal('editNoteModal');
+        }
+
+        document.getElementById('editNoteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const leadId = parseInt(document.getElementById('editLeadId').value);
+            const noteId = document.getElementById('editNoteId').value;
+            const newText = document.getElementById('editNoteText').value;
+            const newDate = document.getElementById('editNoteDate').value;
+
             const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
+            submitBtn.innerText = "Updating..."; submitBtn.disabled = true;
 
-            const { error: editErr } = await supabaseClient.from('leads').update({
-                name: document.getElementById('editName').value,
-                phone: document.getElementById('editPhone').value,
-                requirement: document.getElementById('editReq').value,
-                project_details: document.getElementById('editDetails').value
-            }).eq('id', leadId);
+            const { error } = await supabaseClient.from('interactions').update({
+                note: newText,
+                next_followup_date: newDate
+            }).eq('id', noteId);
 
-            if (editErr) {
-                showToast("Error editing client: " + editErr.message, "❌");
-                submitBtn.innerText = "Save Changes"; submitBtn.disabled = false;
+            submitBtn.innerText = "Update Note"; submitBtn.disabled = false;
+            
+            if (error) {
+                showToast("Error updating note", "❌");
                 return;
             }
 
-            submitBtn.innerText = "Save Changes"; submitBtn.disabled = false;
-            e.target.reset();
-            closeModal('editLeadModal');
-            showToast('Client updated!', '✏️');
+            closeModal('editNoteModal');
+            showToast('Note updated!', '📝');
             await loadData();
         });
 
-        // Edit interaction history form
-        document.getElementById('editLogForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const intId = parseInt(document.getElementById('editLogId').value);
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.innerText = "Saving..."; submitBtn.disabled = true;
+        async function deleteNote(noteId) {
+            if(!confirm("Delete this interaction note?")) return;
+            showToast("Deleting note...", "🗑️");
+            await supabaseClient.from('interactions').delete().eq('id', noteId);
+            await loadData();
+            showToast("Note deleted", "✅");
+        }
 
-            const { error: intEditErr } = await supabaseClient.from('interactions').update({
-                date: document.getElementById('editLogInteractionDate').value,
-                note: document.getElementById('editLogNote').value,
-                next_action: document.getElementById('editLogNextStep').value,
-                priority: document.getElementById('editLogPriority').value,
-                next_followup_date: document.getElementById('editLogDate').value
-            }).eq('id', intId);
-
-            if (intEditErr) {
-                showToast("Error updating history: " + intEditErr.message, "❌");
-            } else {
-                showToast("Memory updated!", "✏️");
-                closeModal('editLogModal');
-                await loadData();
-                
-                // Keep the history view open and fresh
-                if (currentHistoryLeadId) {
-                    openHistoryModal(currentHistoryLeadId);
-                }
-            }
-            
-            submitBtn.innerText = "Save Changes"; submitBtn.disabled = false;
-        });
-
-        // Init App: Wait for data to load from Supabase
+        // Init App
         window.onload = async () => { 
             await loadData();
         };
